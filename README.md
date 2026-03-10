@@ -68,14 +68,18 @@ The CLI defaults to a terminal-friendly `pretty` format.
 npm run dev -- triage path/to/paper.pdf --compact
 ```
 
-### Force regeneration
+### Cache control
 
 By default, `triage` and `deconstruct` reuse cached structured results when the paper text, command, model, and prompt version match.
 
 ```bash
 npm run dev -- triage path/to/paper.pdf --force
 npm run dev -- deconstruct path/to/paper.pdf --force
+npm run dev -- triage path/to/paper.pdf --no-cache
 ```
+
+- `--force`: bypass cache reads and regenerate, then update the cache
+- `--no-cache`: bypass cache reads and writes entirely for a one-off run
 
 ### Markdown
 

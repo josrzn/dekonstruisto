@@ -25,6 +25,7 @@ interface ParsedArgs {
   noColor?: boolean;
   compact?: boolean;
   force?: boolean;
+  noCache?: boolean;
 }
 
 let activeSpinner: Spinner | undefined;
@@ -42,6 +43,7 @@ Shortcuts:
   --json        same as --format json
   --compact     denser pretty output for terminal scanning
   --force       bypass cached triage/deconstruction and regenerate
+  --no-cache    do not read from or write to cache
   --no-color    disable ANSI colors in pretty output
 
 Interactive UX:
@@ -89,6 +91,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       parsed.compact = true;
     } else if (token === "--force") {
       parsed.force = true;
+    } else if (token === "--no-cache") {
+      parsed.noCache = true;
     }
   }
 
@@ -149,6 +153,7 @@ async function main(): Promise<void> {
   const compact = format === "pretty" && !!args.compact;
   const spinner = new Spinner(process.stdout.isTTY && process.stderr.isTTY);
   activeSpinner = spinner;
+  const cacheEnabled = !args.noCache;
 
   spinner.start("Reading paper...");
   const paper = await extractPaperText(args.filePath, config.maxContextChars);
@@ -156,7 +161,7 @@ async function main(): Promise<void> {
   if (args.command === "triage") {
     let result: TriageResult | null = null;
 
-    if (!args.force) {
+    if (cacheEnabled && !args.force) {
       spinner.update("Checking triage cache...");
       result = await readCachedResult<TriageResult>({
         command: "triage",
@@ -169,18 +174,20 @@ async function main(): Promise<void> {
     if (result) {
       spinner.stop("Loaded cached triage.");
     } else {
-      spinner.update(args.force ? "Regenerating triage..." : "Triaging...");
+      spinner.update(args.force ? "Regenerating triage..." : cacheEnabled ? "Triaging..." : "Triaging without cache...");
       const prompt = buildTriagePrompt(paper.fileName, paper.text);
       result = await generateStructuredOutput<TriageResult>(prompt);
-      await writeCachedResult(
-        {
-          command: "triage",
-          model: config.model,
-          promptVersion: TRIAGE_PROMPT_VERSION,
-          paperText: paper.text,
-        },
-        result,
-      );
+      if (cacheEnabled) {
+        await writeCachedResult(
+          {
+            command: "triage",
+            model: config.model,
+            promptVersion: TRIAGE_PROMPT_VERSION,
+            paperText: paper.text,
+          },
+          result,
+        );
+      }
       spinner.stop();
     }
 
@@ -194,7 +201,7 @@ async function main(): Promise<void> {
   if (args.command === "deconstruct") {
     let result: DeconstructionResult | null = null;
 
-    if (!args.force) {
+    if (cacheEnabled && !args.force) {
       spinner.update("Checking deconstruction cache...");
       result = await readCachedResult<DeconstructionResult>({
         command: "deconstruct",
@@ -207,18 +214,20 @@ async function main(): Promise<void> {
     if (result) {
       spinner.stop("Loaded cached deconstruction.");
     } else {
-      spinner.update(args.force ? "Regenerating deconstruction..." : "Deconstructing...");
+      spinner.update(args.force ? "Regenerating deconstruction..." : cacheEnabled ? "Deconstructing..." : "Deconstructing without cache...");
       const prompt = buildDeconstructionPrompt(paper.fileName, paper.text);
       result = await generateStructuredOutput<DeconstructionResult>(prompt);
-      await writeCachedResult(
-        {
-          command: "deconstruct",
-          model: config.model,
-          promptVersion: DECONSTRUCTION_PROMPT_VERSION,
-          paperText: paper.text,
-        },
-        result,
-      );
+      if (cacheEnabled) {
+        await writeCachedResult(
+          {
+            command: "deconstruct",
+            model: config.model,
+            promptVersion: DECONSTRUCTION_PROMPT_VERSION,
+            paperText: paper.text,
+          },
+          result,
+        );
+      }
       spinner.stop();
     }
 
