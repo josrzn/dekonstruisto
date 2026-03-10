@@ -22,7 +22,10 @@ interface CacheEnvelope<T> {
 }
 
 const CACHE_VERSION = "v1";
-const CACHE_DIR = path.resolve(".paper-deconstructor-cache");
+
+function getCacheDir(): string {
+  return path.resolve(process.env.PAPER_DECONSTRUCTOR_CACHE_DIR || ".paper-deconstructor-cache");
+}
 
 function sha256(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -45,7 +48,7 @@ function getCacheKey(input: CacheKeyInput): string {
 }
 
 function getCachePath(key: string): string {
-  return path.join(CACHE_DIR, `${key}.json`);
+  return path.join(getCacheDir(), `${key}.json`);
 }
 
 export async function readCachedResult<T>(input: CacheKeyInput): Promise<T | null> {
@@ -83,6 +86,6 @@ export async function writeCachedResult<T>(input: CacheKeyInput, result: T): Pro
     result,
   };
 
-  await fs.mkdir(CACHE_DIR, { recursive: true });
+  await fs.mkdir(getCacheDir(), { recursive: true });
   await fs.writeFile(cachePath, JSON.stringify(envelope, null, 2), "utf8");
 }

@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { getConfig } from "./config.js";
 import { BASE_SYSTEM_PROMPT } from "./prompts.js";
 
-function extractJson(text: string): string {
+export function extractJson(text: string): string {
   const trimmed = text.trim();
 
   if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
@@ -31,7 +31,7 @@ function tryParseJson<T>(value: string): T | null {
   }
 }
 
-function repairEscapedJson(text: string): string {
+export function repairEscapedJson(text: string): string {
   return text
     .replace(/^\s*"([\s\S]*)"\s*$/, "$1")
     .replace(/\\n/g, "\n")
@@ -40,7 +40,7 @@ function repairEscapedJson(text: string): string {
     .replace(/\\"/g, '"');
 }
 
-function parseStructuredJson<T>(text: string): T {
+export function parseStructuredJson<T>(text: string): T {
   const extracted = extractJson(text);
 
   const direct = tryParseJson<T>(extracted);
