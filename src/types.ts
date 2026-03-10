@@ -74,6 +74,13 @@ export interface TriageQualityGate {
   revisedTriage?: TriageResult;
 }
 
+export interface TriageChainArtifacts {
+  extraction: TriageExtraction;
+  synthesis: TriageResult;
+  qualityGate: TriageQualityGate;
+  finalResult: TriageResult;
+}
+
 export interface DecoderRewrite {
   original: string;
   plainEnglish: string;

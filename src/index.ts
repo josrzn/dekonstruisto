@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { readCachedResult, writeCachedResult } from "./cache.js";
 import { getConfig } from "./config.js";
-import { OutputFormat, renderAsk, renderDeconstruction, renderTriage } from "./format.js";
+import { OutputFormat, renderAsk, renderDeconstruction, renderTriage, renderTriageDebug } from "./format.js";
 import { generateStructuredOutput } from "./llm.js";
 import { extractPaperText } from "./pdf.js";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./prompts.js";
 import { Spinner } from "./spinner.js";
 import { runTriageChain } from "./triage.js";
-import { AskResult, DeconstructionResult, TriageResult } from "./types.js";
+import { AskResult, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
 
 interface ParsedArgs {
   command?: string;
@@ -26,6 +26,7 @@ interface ParsedArgs {
   compact?: boolean;
   force?: boolean;
   noCache?: boolean;
+  debug?: boolean;
 }
 
 let activeSpinner: Spinner | undefined;
@@ -42,6 +43,7 @@ Shortcuts:
   --markdown    same as --format markdown
   --json        same as --format json
   --compact     denser pretty output for terminal scanning
+  --debug       show triage chain artifacts (extraction, pre-gate synthesis, quality gate)
   --force       bypass cached triage/deconstruction and regenerate
   --no-cache    do not read from or write to cache
   --no-color    disable ANSI colors in pretty output
@@ -93,6 +95,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       parsed.force = true;
     } else if (token === "--no-cache") {
       parsed.noCache = true;
+    } else if (token === "--debug") {
+      parsed.debug = true;
     }
   }
 
@@ -160,8 +164,10 @@ async function main(): Promise<void> {
 
   if (args.command === "triage") {
     let result: TriageResult | null = null;
+    let artifacts: TriageChainArtifacts | null = null;
+    const canReadTriageCache = cacheEnabled && !args.force && !args.debug;
 
-    if (cacheEnabled && !args.force) {
+    if (canReadTriageCache) {
       spinner.update("Checking triage cache...");
       result = await readCachedResult<TriageResult>({
         command: "triage",
@@ -174,8 +180,17 @@ async function main(): Promise<void> {
     if (result) {
       spinner.stop("Loaded cached triage.");
     } else {
-      spinner.update(args.force ? "Regenerating triage..." : cacheEnabled ? "Running triage chain..." : "Running triage chain without cache...");
-      result = await runTriageChain(paper.fileName, paper.text, spinner);
+      spinner.update(
+        args.debug
+          ? "Running triage chain with debug artifacts..."
+          : args.force
+            ? "Regenerating triage..."
+            : cacheEnabled
+              ? "Running triage chain..."
+              : "Running triage chain without cache...",
+      );
+      artifacts = await runTriageChain(paper.fileName, paper.text, spinner);
+      result = artifacts.finalResult;
       if (cacheEnabled) {
         await writeCachedResult(
           {
@@ -188,6 +203,38 @@ async function main(): Promise<void> {
         );
       }
       spinner.stop();
+    }
+
+    if (args.debug) {
+      if (!artifacts) {
+        artifacts = await runTriageChain(paper.fileName, paper.text);
+      }
+
+      if (format === "json") {
+        const debugJson = JSON.stringify(
+          {
+            triage: result,
+            debug: artifacts,
+          },
+          null,
+          2,
+        );
+        console.log(debugJson);
+        await writeIfRequested(args.outPath, debugJson);
+        return;
+      }
+
+      const terminalOutput = [
+        renderTriage(result, { format, color: useColor, width: prettyWidth, compact }),
+        renderTriageDebug(artifacts, { format, color: useColor, width: prettyWidth, compact }),
+      ].join("\n\n");
+      const fileOutput = [
+        renderTriage(result, { format, color: false, width: prettyWidth, compact }),
+        renderTriageDebug(artifacts, { format, color: false, width: prettyWidth, compact }),
+      ].join("\n\n");
+      console.log(terminalOutput);
+      await writeIfRequested(args.outPath, fileOutput);
+      return;
     }
 
     const terminalOutput = renderTriage(result, { format, color: useColor, width: prettyWidth, compact });

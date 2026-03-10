@@ -5,9 +5,9 @@ import {
   buildTriageSynthesisPrompt,
 } from "./prompts.js";
 import { Spinner } from "./spinner.js";
-import { TriageExtraction, TriageQualityGate, TriageResult } from "./types.js";
+import { TriageChainArtifacts, TriageExtraction, TriageQualityGate, TriageResult } from "./types.js";
 
-export async function runTriageChain(fileName: string, paperText: string, spinner?: Spinner): Promise<TriageResult> {
+export async function runTriageChain(fileName: string, paperText: string, spinner?: Spinner): Promise<TriageChainArtifacts> {
   spinner?.update("Extracting core claims and evidence...");
   const extraction = await generateStructuredOutput<TriageExtraction>(buildTriageExtractionPrompt(fileName, paperText));
 
@@ -26,8 +26,18 @@ export async function runTriageChain(fileName: string, paperText: string, spinne
       throw new Error("Triage quality gate requested revision but did not provide revisedTriage.");
     }
 
-    return qualityGate.revisedTriage;
+    return {
+      extraction,
+      synthesis,
+      qualityGate,
+      finalResult: qualityGate.revisedTriage,
+    };
   }
 
-  return synthesis;
+  return {
+    extraction,
+    synthesis,
+    qualityGate,
+    finalResult: synthesis,
+  };
 }

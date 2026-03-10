@@ -15,6 +15,7 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - spinner feedback while reading and analyzing in interactive terminals
 - local caching for triage and deconstruction results
 - triage runs as a multi-step prompt chain with an explicit quality-check pass
+- optional `--debug` mode to show triage chain artifacts
 - OpenAI-compatible LLM backend via environment variables
 
 ## Simple stack
@@ -69,6 +70,14 @@ The CLI defaults to a terminal-friendly `pretty` format.
 npm run dev -- triage path/to/paper.pdf --compact
 ```
 
+### Debug triage chain
+
+```bash
+npm run dev -- triage path/to/paper.pdf --debug
+```
+
+This shows the extraction step, the pre-gate synthesis, and the quality-gate verdict/issues alongside the final triage output.
+
 ### Cache control
 
 By default, `triage` and `deconstruct` reuse cached structured results when the paper text, command, model, and prompt version match.
@@ -81,6 +90,7 @@ npm run dev -- triage path/to/paper.pdf --no-cache
 
 - `--force`: bypass cache reads and regenerate, then update the cache
 - `--no-cache`: bypass cache reads and writes entirely for a one-off run
+- `--debug`: skips triage cache reads so intermediate chain artifacts can be shown, but still writes the final triage result to cache unless `--no-cache` is also set
 
 ### Markdown
 

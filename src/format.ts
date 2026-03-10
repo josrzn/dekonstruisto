@@ -1,4 +1,4 @@
-import { AskResult, DeconstructionResult, TriageResult } from "./types.js";
+import { AskResult, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
 
 export type OutputFormat = "pretty" | "markdown" | "json";
 
@@ -451,6 +451,155 @@ export function renderDeconstruction(result: DeconstructionResult, options: Rend
   }
 
   return formatDeconstructionPretty(result, options.width ?? 100, options.color ?? false, options.compact ?? false);
+}
+
+function formatBool(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
+function formatTriageDebugPretty(artifacts: TriageChainArtifacts, width: number, color: boolean, compact: boolean): string {
+  const style = createStyler(color);
+
+  const extractionClaims = artifacts.extraction.coreClaims.map(
+    (item, index) => `${index + 1}. [${item.claimType}] ${item.claim} | Passage: ${item.supportingPassage}`,
+  );
+  const extractionEvidence = artifacts.extraction.evidenceItems.map(
+    (item, index) =>
+      `${index + 1}. [${item.evidenceType}] ${item.evidence} | Related claims: ${item.relatedClaims.join(", ") || "none"} | Passage: ${item.supportingPassage}`,
+  );
+  const qualityChecks = Object.entries(artifacts.qualityGate.checks).map(([key, value]) => `${key}: ${formatBool(value)}`);
+
+  if (compact) {
+    return [
+      style.bold(style.cyan("Debug: Triage Chain")),
+      rule(Math.min(width, 32), style),
+      wrapBlock(`Contribution signal candidates: ${artifacts.extraction.contributionSignals.candidateTypes.join(", ")}`, width, 0),
+      wrapBlock(`Contribution rationale: ${artifacts.extraction.contributionSignals.rationale}`, width, 0),
+      ...extractionClaims.map((item) => wrapBlock(`Claim: ${item}`, width, 0)),
+      ...extractionEvidence.map((item) => wrapBlock(`Evidence: ${item}`, width, 0)),
+      wrapBlock(`Quality gate verdict: ${artifacts.qualityGate.verdict}`, width, 0),
+      ...qualityChecks.map((item) => wrapBlock(`Check: ${item}`, width, 0)),
+      ...artifacts.qualityGate.issues.map((item) => wrapBlock(`Issue: ${item}`, width, 0)),
+      wrapBlock(`Final revised by gate: ${formatBool(artifacts.qualityGate.verdict === "revise")}`, width, 0),
+    ].join("\n");
+  }
+
+  return [
+    section("Debug: Triage Chain", width, style),
+    "",
+    boxKeyValue(
+      "Extraction Signals",
+      [
+        {
+          label: "Candidate Contribution Types",
+          value: artifacts.extraction.contributionSignals.candidateTypes.join(", "),
+        },
+        { label: "Contribution Rationale", value: artifacts.extraction.contributionSignals.rationale },
+        { label: "Mechanism Bias / Method", value: artifacts.extraction.mechanismSignals.biasOrMethod },
+        { label: "Mechanism Data / Structure", value: artifacts.extraction.mechanismSignals.dataOrStructure },
+        { label: "Mechanism Claimed Effect", value: artifacts.extraction.mechanismSignals.claimedEffect },
+        { label: "Mechanism Why", value: artifacts.extraction.mechanismSignals.whyAuthorsExpectIt },
+      ],
+      width,
+      style,
+    ),
+    "",
+    boxBullets("Extracted Core Claims", extractionClaims, width, style),
+    "",
+    boxBullets("Extracted Evidence Items", extractionEvidence, width, style),
+    "",
+    boxKeyValue(
+      "Pre-Gate Synthesis",
+      [
+        { label: "One-Line Thesis", value: artifacts.synthesis.oneLineThesis },
+        { label: "Contribution Type", value: artifacts.synthesis.contributionType.join(", ") },
+        {
+          label: "Recommendation",
+          value: `${artifacts.synthesis.investmentRecommendation.verdict} — ${artifacts.synthesis.investmentRecommendation.justification}`,
+        },
+      ],
+      width,
+      style,
+    ),
+    "",
+    boxKeyValue(
+      "Quality Gate",
+      [
+        { label: "Verdict", value: artifacts.qualityGate.verdict },
+        ...qualityChecks.map((item) => {
+          const [label, value] = item.split(": ");
+          return { label, value };
+        }),
+        { label: "Revised Final Result", value: formatBool(artifacts.qualityGate.verdict === "revise") },
+      ],
+      width,
+      style,
+    ),
+    "",
+    boxBullets(
+      "Quality Gate Issues",
+      artifacts.qualityGate.issues.length > 0 ? artifacts.qualityGate.issues : ["none"],
+      width,
+      style,
+    ),
+  ].join("\n");
+}
+
+function formatTriageDebugMarkdown(artifacts: TriageChainArtifacts): string {
+  const claims = artifacts.extraction.coreClaims
+    .map((item, index) => `- Claim ${index + 1} [${item.claimType}]: ${item.claim}\n  - Passage: ${item.supportingPassage}`)
+    .join("\n");
+  const evidence = artifacts.extraction.evidenceItems
+    .map(
+      (item, index) =>
+        `- Evidence ${index + 1} [${item.evidenceType}]: ${item.evidence}\n  - Related claims: ${item.relatedClaims.join(", ") || "none"}\n  - Passage: ${item.supportingPassage}`,
+    )
+    .join("\n");
+  const checks = Object.entries(artifacts.qualityGate.checks)
+    .map(([key, value]) => `- ${key}: ${formatBool(value)}`)
+    .join("\n");
+  const issues = artifacts.qualityGate.issues.length > 0 ? artifacts.qualityGate.issues.map((item) => `- ${item}`).join("\n") : "- none";
+
+  return `## Debug: Triage Chain
+
+### Extraction Signals
+- Candidate contribution types: ${artifacts.extraction.contributionSignals.candidateTypes.join(", ")}
+- Contribution rationale: ${artifacts.extraction.contributionSignals.rationale}
+- Mechanism bias / method: ${artifacts.extraction.mechanismSignals.biasOrMethod}
+- Mechanism data / structure: ${artifacts.extraction.mechanismSignals.dataOrStructure}
+- Mechanism claimed effect: ${artifacts.extraction.mechanismSignals.claimedEffect}
+- Mechanism why: ${artifacts.extraction.mechanismSignals.whyAuthorsExpectIt}
+
+### Extracted Core Claims
+${claims}
+
+### Extracted Evidence Items
+${evidence}
+
+### Pre-Gate Synthesis
+- One-line thesis: ${artifacts.synthesis.oneLineThesis}
+- Contribution type: ${artifacts.synthesis.contributionType.join(", ")}
+- Recommendation: ${artifacts.synthesis.investmentRecommendation.verdict} — ${artifacts.synthesis.investmentRecommendation.justification}
+
+### Quality Gate
+- Verdict: ${artifacts.qualityGate.verdict}
+- Revised final result: ${formatBool(artifacts.qualityGate.verdict === "revise")}
+${checks}
+
+### Quality Gate Issues
+${issues}`;
+}
+
+export function renderTriageDebug(artifacts: TriageChainArtifacts, options: RenderOptions): string {
+  if (options.format === "json") {
+    return JSON.stringify(artifacts, null, 2);
+  }
+
+  if (options.format === "markdown") {
+    return formatTriageDebugMarkdown(artifacts);
+  }
+
+  return formatTriageDebugPretty(artifacts, options.width ?? 100, options.color ?? false, options.compact ?? false);
 }
 
 export function renderAsk(question: string, result: AskResult, options: RenderOptions): string {
