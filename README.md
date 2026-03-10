@@ -8,6 +8,8 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - `deconstruct`: generates a minimal Mode 2 Deconstruction Report
 - `ask`: asks a follow-up question against the paper text
 - PDF, TXT, and Markdown input support
+- terminal-friendly pretty output by default
+- optional Markdown and JSON output modes
 - OpenAI-compatible LLM backend via environment variables
 
 ## Simple stack
@@ -52,10 +54,44 @@ npm run dev -- deconstruct path/to/paper.pdf
 npm run dev -- ask path/to/paper.pdf --question "What is the weakest link in the paper's argument?"
 ```
 
+## Output formats
+
+The CLI defaults to a terminal-friendly `pretty` format.
+
+### Markdown
+
+```bash
+npm run dev -- triage path/to/paper.pdf --markdown
+```
+
+### JSON
+
+```bash
+npm run dev -- triage path/to/paper.pdf --json
+```
+
+### Explicit format selection
+
+```bash
+npm run dev -- triage path/to/paper.pdf --format pretty
+npm run dev -- triage path/to/paper.pdf --format markdown
+npm run dev -- triage path/to/paper.pdf --format json
+```
+
 ### Save output
 
 ```bash
+npm run dev -- triage path/to/paper.pdf --out output/triage.txt
 npm run dev -- triage path/to/paper.pdf --out output/triage.md
+npm run dev -- triage path/to/paper.pdf --out output/triage.json
+```
+
+If `--out` ends with `.md` or `.json`, the CLI infers that format unless you override it with `--format`.
+
+### Disable color
+
+```bash
+npm run dev -- triage path/to/paper.pdf --no-color
 ```
 
 ## Build
