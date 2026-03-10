@@ -95,11 +95,77 @@ export interface ClaimEvidenceItem {
   alternativeExplanation: string;
 }
 
+export interface DeconstructionArchitecture {
+  title: string;
+  templateType:
+    | "artifact discovery"
+    | "measurement paper"
+    | "control method"
+    | "benchmark paper"
+    | "theoretical analysis"
+    | "survey/position"
+    | "other";
+  setup: string;
+  methodProperty: string;
+  dataStructure: string;
+  claimedImplication: string;
+  plainLanguageArchitecture: string;
+  supportingPassages: string[];
+}
+
+export interface DeconstructionDecoder {
+  decoderRewrites: Array<{
+    original: string;
+    plainEnglish: string;
+    explanation: string;
+    whyThisSentenceMatters: string;
+    sectionGuess: "abstract" | "introduction" | "method" | "results" | "discussion" | "conclusion" | "unknown";
+  }>;
+}
+
+export interface DeconstructionClaimMap {
+  claimEvidenceMap: Array<{
+    claim: string;
+    evidence: string;
+    evidenceType: "empirical" | "theoretical" | "analogical" | "authority-based" | "mixed";
+    strength: "strong" | "moderate" | "weak";
+    alternativeExplanation: string;
+    supportingPassage: string;
+  }>;
+}
+
 export interface DeconstructionResult {
   title: string;
   argumentArchitecture: string;
   decoderRewrites: DecoderRewrite[];
   claimEvidenceMap: ClaimEvidenceItem[];
+}
+
+export interface DeconstructionQualityGate {
+  verdict: "pass" | "revise";
+  checks: {
+    architectureGrounded: boolean;
+    architectureMatchesClaims: boolean;
+    decoderSelectionsCentral: boolean;
+    decoderRewritesFaithful: boolean;
+    claimMapGrounded: boolean;
+    strengthLabelsCalibrated: boolean;
+    alternativeExplanationsSpecific: boolean;
+    inventedContent: boolean;
+    tooFlattering: boolean;
+    tooCynical: boolean;
+  };
+  issues: string[];
+  revisedDeconstruction?: DeconstructionResult;
+}
+
+export interface DeconstructionChainArtifacts {
+  architecture: DeconstructionArchitecture;
+  decoder: DeconstructionDecoder;
+  claimMap: DeconstructionClaimMap;
+  assembly: DeconstructionResult;
+  qualityGate: DeconstructionQualityGate;
+  finalResult: DeconstructionResult;
 }
 
 export interface AskResult {

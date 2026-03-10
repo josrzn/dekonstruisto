@@ -15,6 +15,7 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - spinner feedback while reading and analyzing in interactive terminals
 - local caching for triage and deconstruction results
 - triage runs as a multi-step prompt chain with an explicit quality-check pass
+- deconstruct runs as a multi-step prompt chain with a final quality-check pass
 - optional `--debug` mode to show triage chain artifacts
 - OpenAI-compatible LLM backend via environment variables
 
@@ -53,6 +54,8 @@ npm run dev -- triage path/to/paper.pdf
 ```bash
 npm run dev -- deconstruct path/to/paper.pdf
 ```
+
+This now runs a multi-step deconstruction chain that separately extracts argument architecture, decoder rewrites, and claim-evidence structure before a final quality-check pass.
 
 ### Follow-up question
 

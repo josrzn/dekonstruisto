@@ -1,10 +1,22 @@
-import { TriageExtraction, TriageResult } from "./types.js";
+import {
+  DeconstructionArchitecture,
+  DeconstructionClaimMap,
+  DeconstructionDecoder,
+  DeconstructionResult,
+  TriageExtraction,
+  TriageResult,
+} from "./types.js";
 
 export const TRIAGE_EXTRACTION_PROMPT_VERSION = "v1";
 export const TRIAGE_SYNTHESIS_PROMPT_VERSION = "v1";
 export const TRIAGE_QUALITY_GATE_PROMPT_VERSION = "v1";
 export const TRIAGE_CHAIN_VERSION = `chain-${TRIAGE_EXTRACTION_PROMPT_VERSION}-${TRIAGE_SYNTHESIS_PROMPT_VERSION}-${TRIAGE_QUALITY_GATE_PROMPT_VERSION}`;
-export const DECONSTRUCTION_PROMPT_VERSION = "v1";
+
+export const DECONSTRUCTION_ARCHITECTURE_PROMPT_VERSION = "v1";
+export const DECONSTRUCTION_DECODER_PROMPT_VERSION = "v1";
+export const DECONSTRUCTION_CLAIM_MAP_PROMPT_VERSION = "v1";
+export const DECONSTRUCTION_QUALITY_GATE_PROMPT_VERSION = "v1";
+export const DECONSTRUCTION_CHAIN_VERSION = `chain-${DECONSTRUCTION_ARCHITECTURE_PROMPT_VERSION}-${DECONSTRUCTION_DECODER_PROMPT_VERSION}-${DECONSTRUCTION_CLAIM_MAP_PROMPT_VERSION}-${DECONSTRUCTION_QUALITY_GATE_PROMPT_VERSION}`;
 
 export const BASE_SYSTEM_PROMPT = `You are Paper Deconstructor, a skeptical but fair research judgment assistant.
 
@@ -224,43 +236,202 @@ ${paperText}
 """`;
 }
 
-export function buildDeconstructionPrompt(fileName: string, paperText: string): string {
-  return `Analyze the following paper and produce a minimal Mode 2 Deconstruction Report.
+export function buildDeconstructionArchitecturePrompt(fileName: string, paperText: string): string {
+  return `Extract the hidden argument architecture of the following paper.
 
 File: ${fileName}
+
+You are in structure-extraction mode.
+- Do not produce a full deconstruction yet.
+- Reconstruct the paper's setup, method property, relevant data/world structure, and claimed implication.
+- Identify which paper template best fits.
+- Ground the architecture in 1 to 3 verbatim supporting passages.
 
 Return JSON with exactly this shape:
 {
   "title": string,
-  "argumentArchitecture": string,
+  "templateType": "artifact discovery" | "measurement paper" | "control method" | "benchmark paper" | "theoretical analysis" | "survey/position" | "other",
+  "setup": string,
+  "methodProperty": string,
+  "dataStructure": string,
+  "claimedImplication": string,
+  "plainLanguageArchitecture": string,
+  "supportingPassages": string[]
+}
+
+Paper text:
+"""
+${paperText}
+"""`;
+}
+
+export function buildDeconstructionDecoderPrompt(fileName: string, paperText: string): string {
+  return `Select and decode the densest or most revealing sentences from the following paper.
+
+File: ${fileName}
+
+You are in paper-decoder mode.
+- Select 3 to 5 sentences that are both important and meaningfully compressed.
+- Each original sentence must appear verbatim in the paper text.
+- Prefer abstract, introduction, conclusion, or other structurally central sentences unless a method/results sentence is more revealing.
+- Explain why each sentence matters to understanding the paper.
+
+Return JSON with exactly this shape:
+{
   "decoderRewrites": [
     {
       "original": string,
       "plainEnglish": string,
-      "explanation": string
+      "explanation": string,
+      "whyThisSentenceMatters": string,
+      "sectionGuess": "abstract" | "introduction" | "method" | "results" | "discussion" | "conclusion" | "unknown"
     }
-  ],
+  ]
+}
+
+Paper text:
+"""
+${paperText}
+"""`;
+}
+
+export function buildDeconstructionClaimMapPrompt(fileName: string, paperText: string): string {
+  return `Build a claim-evidence map for the following paper.
+
+File: ${fileName}
+
+You are in skeptical mapping mode.
+- Extract 3 to 6 major claims only.
+- For each claim, describe the evidence actually offered.
+- Rate evidence strength based on support, not author confidence.
+- Alternative explanations must be specific, not generic reviewer boilerplate.
+- Every item must include a verbatim supporting passage.
+
+Return JSON with exactly this shape:
+{
   "claimEvidenceMap": [
     {
       "claim": string,
       "evidence": string,
       "evidenceType": "empirical" | "theoretical" | "analogical" | "authority-based" | "mixed",
       "strength": "strong" | "moderate" | "weak",
-      "alternativeExplanation": string
+      "alternativeExplanation": string,
+      "supportingPassage": string
     }
   ]
 }
-
-Requirements:
-- argumentArchitecture should reconstruct the paper's hidden causal chain in plain language.
-- decoderRewrites should include 3 to 5 dense or important sentences from the paper.
-- claimEvidenceMap should include 3 to 6 major claims.
-- Do not praise the paper unless the evidence clearly justifies it.
 
 Paper text:
 """
 ${paperText}
 """`;
+}
+
+export function buildDeconstructionQualityGatePrompt(
+  fileName: string,
+  paperText: string,
+  architecture: DeconstructionArchitecture,
+  decoder: DeconstructionDecoder,
+  claimMap: DeconstructionClaimMap,
+  assembly: DeconstructionResult,
+): string {
+  return `Quality-check the deconstruction below for grounding, coherence, calibration, and fairness.
+
+File: ${fileName}
+
+You are acting as a strict but fair editor.
+Check specifically:
+- architectureGrounded: does the argument architecture reflect the paper text?
+- architectureMatchesClaims: is the architecture consistent with the major claims in the claim-evidence map?
+- decoderSelectionsCentral: are the chosen sentences central rather than arbitrary details?
+- decoderRewritesFaithful: are the rewrites faithful to the original sentences?
+- claimMapGrounded: are the claims/evidence/alternatives grounded in the paper text?
+- strengthLabelsCalibrated: are strength labels fair and not systematically flattering or harsh?
+- alternativeExplanationsSpecific: are alternative explanations specific rather than boilerplate?
+- inventedContent: does the assembly invent content not supported by the paper or prior extraction steps?
+- tooFlattering: does the result collapse into a polished explanation rather than a true deconstruction?
+- tooCynical: is it unfairly harsh given the evidence?
+
+If the deconstruction is acceptable, return verdict "pass" and omit revisedDeconstruction.
+If it needs correction, return verdict "revise" and provide a full revisedDeconstruction object.
+
+Return JSON with exactly this shape:
+{
+  "verdict": "pass" | "revise",
+  "checks": {
+    "architectureGrounded": boolean,
+    "architectureMatchesClaims": boolean,
+    "decoderSelectionsCentral": boolean,
+    "decoderRewritesFaithful": boolean,
+    "claimMapGrounded": boolean,
+    "strengthLabelsCalibrated": boolean,
+    "alternativeExplanationsSpecific": boolean,
+    "inventedContent": boolean,
+    "tooFlattering": boolean,
+    "tooCynical": boolean
+  },
+  "issues": string[],
+  "revisedDeconstruction": {
+    "title": string,
+    "argumentArchitecture": string,
+    "decoderRewrites": [
+      {
+        "original": string,
+        "plainEnglish": string,
+        "explanation": string
+      }
+    ],
+    "claimEvidenceMap": [
+      {
+        "claim": string,
+        "evidence": string,
+        "evidenceType": "empirical" | "theoretical" | "analogical" | "authority-based" | "mixed",
+        "strength": "strong" | "moderate" | "weak",
+        "alternativeExplanation": string
+      }
+    ]
+  }
+}
+
+Extracted architecture:
+${JSON.stringify(architecture, null, 2)}
+
+Extracted decoder rewrites:
+${JSON.stringify(decoder, null, 2)}
+
+Extracted claim-evidence map:
+${JSON.stringify(claimMap, null, 2)}
+
+Candidate deconstruction:
+${JSON.stringify(assembly, null, 2)}
+
+Paper text:
+"""
+${paperText}
+"""`;
+}
+
+export function buildDeconstructionAssembly(
+  architecture: DeconstructionArchitecture,
+  decoder: DeconstructionDecoder,
+  claimMap: DeconstructionClaimMap,
+): DeconstructionResult {
+  return {
+    title: architecture.title,
+    argumentArchitecture: architecture.plainLanguageArchitecture,
+    decoderRewrites: decoder.decoderRewrites.map((item) => ({
+      original: item.original,
+      plainEnglish: item.plainEnglish,
+      explanation: item.explanation,
+    })),
+    claimEvidenceMap: claimMap.claimEvidenceMap.map((item) => ({
+      claim: item.claim,
+      evidence: item.evidence,
+      evidenceType: item.evidenceType,
+      strength: item.strength,
+      alternativeExplanation: item.alternativeExplanation,
+    })),
+  };
 }
 
 export function buildAskPrompt(fileName: string, paperText: string, question: string): string {
