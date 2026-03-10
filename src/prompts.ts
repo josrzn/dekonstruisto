@@ -434,11 +434,29 @@ export function buildDeconstructionAssembly(
   };
 }
 
-export function buildAskPrompt(fileName: string, paperText: string, question: string): string {
+export function buildAskPrompt(
+  fileName: string,
+  paperText: string,
+  question: string,
+  context?: {
+    triage?: TriageResult | null;
+    deconstruction?: DeconstructionResult | null;
+  },
+): string {
+  const cachedContext = {
+    triage: context?.triage ?? null,
+    deconstruction: context?.deconstruction ?? null,
+  };
+
   return `Answer the user's question about this paper.
 
 File: ${fileName}
 Question: ${question}
+
+You may use the cached structured analyses below as supplemental scaffolding, but the paper text remains the source of truth.
+- If cached analysis conflicts with the paper text, trust the paper text.
+- Do not cite the cached analysis as evidence.
+- citedPassages must be verbatim snippets from the paper text only.
 
 Return JSON with exactly this shape:
 {
@@ -448,9 +466,13 @@ Return JSON with exactly this shape:
 }
 
 Requirements:
-- Answer based only on the provided paper text.
+- Answer based primarily on the provided paper text.
+- Use cached triage/deconstruction only to improve focus, consistency, and recall of the paper's structure.
 - If the paper text is insufficient, say what is missing.
 - citedPassages should include 1 to 3 verbatim snippets from the paper text.
+
+Cached structured context:
+${JSON.stringify(cachedContext, null, 2)}
 
 Paper text:
 """

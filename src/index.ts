@@ -328,8 +328,37 @@ async function main(): Promise<void> {
       throw new Error("Missing --question for ask command.");
     }
 
-    spinner.update("Answering follow-up question...");
-    const prompt = buildAskPrompt(paper.fileName, paper.text, args.question);
+    let triageContext: TriageResult | null = null;
+    let deconstructionContext: DeconstructionResult | null = null;
+
+    if (cacheEnabled) {
+      spinner.update("Checking cached analysis context...");
+      [triageContext, deconstructionContext] = await Promise.all([
+        readCachedResult<TriageResult>({
+          command: "triage",
+          model: config.model,
+          promptVersion: TRIAGE_CHAIN_VERSION,
+          paperText: paper.text,
+        }),
+        readCachedResult<DeconstructionResult>({
+          command: "deconstruct",
+          model: config.model,
+          promptVersion: DECONSTRUCTION_CHAIN_VERSION,
+          paperText: paper.text,
+        }),
+      ]);
+    }
+
+    const hasStructuredContext = Boolean(triageContext || deconstructionContext);
+    spinner.update(
+      hasStructuredContext
+        ? "Answering follow-up question with cached analysis context..."
+        : "Answering follow-up question...",
+    );
+    const prompt = buildAskPrompt(paper.fileName, paper.text, args.question, {
+      triage: triageContext,
+      deconstruction: deconstructionContext,
+    });
     const result = await generateStructuredOutput<AskResult>(prompt);
     spinner.stop();
     const terminalOutput = renderAsk(args.question, result, { format, color: useColor, width: prettyWidth, compact });

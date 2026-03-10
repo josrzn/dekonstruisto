@@ -6,7 +6,7 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 
 - `triage`: generates a Mode 1 Triage Card
 - `deconstruct`: generates a minimal Mode 2 Deconstruction Report
-- `ask`: asks a follow-up question against the paper text
+- `ask`: asks a follow-up question against the paper text and reuses cached triage/deconstruction context when available
 - PDF, TXT, and Markdown input support
 - terminal-friendly pretty output by default
 - richer pretty-mode styling with Unicode box drawing
@@ -63,6 +63,8 @@ This now runs a multi-step deconstruction chain that separately extracts argumen
 npm run dev -- ask path/to/paper.pdf --question "What is the weakest link in the paper's argument?"
 ```
 
+If cached `triage` and/or `deconstruct` results exist for the same paper and model, `ask` will reuse them as supplemental context while still grounding its answer in the paper text.
+
 ## Output formats
 
 The CLI defaults to a terminal-friendly `pretty` format.
@@ -97,6 +99,7 @@ npm run dev -- triage path/to/paper.pdf --no-cache
 - `--force`: bypass cache reads and regenerate, then update the cache
 - `--no-cache`: bypass cache reads and writes entirely for a one-off run
 - `--debug`: skips triage/deconstruct cache reads so intermediate chain artifacts can be shown, but still writes the final result to cache unless `--no-cache` is also set
+- `ask` reuses cached triage/deconstruct results as supplemental context unless `--no-cache` is set
 
 ### Markdown
 
