@@ -1,4 +1,4 @@
-import { AskResult, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
+import { AskResult, DeconstructionChainArtifacts, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
 
 export type OutputFormat = "pretty" | "markdown" | "json";
 
@@ -600,6 +600,171 @@ export function renderTriageDebug(artifacts: TriageChainArtifacts, options: Rend
   }
 
   return formatTriageDebugPretty(artifacts, options.width ?? 100, options.color ?? false, options.compact ?? false);
+}
+
+function formatDeconstructionDebugPretty(
+  artifacts: DeconstructionChainArtifacts,
+  width: number,
+  color: boolean,
+  compact: boolean,
+): string {
+  const style = createStyler(color);
+  const decoderItems = artifacts.decoder.decoderRewrites.map(
+    (item, index) =>
+      `${index + 1}. [${item.sectionGuess}] ${item.original} | Why it matters: ${item.whyThisSentenceMatters} | Plain English: ${item.plainEnglish}`,
+  );
+  const claimItems = artifacts.claimMap.claimEvidenceMap.map(
+    (item, index) =>
+      `${index + 1}. Claim: ${item.claim} | Evidence type: ${item.evidenceType} | Strength: ${item.strength} | Alt: ${item.alternativeExplanation} | Passage: ${item.supportingPassage}`,
+  );
+  const qualityChecks = Object.entries(artifacts.qualityGate.checks).map(([key, value]) => `${key}: ${formatBool(value)}`);
+
+  if (compact) {
+    return [
+      style.bold(style.cyan("Debug: Deconstruction Chain")),
+      rule(Math.min(width, 36), style),
+      wrapBlock(`Template type: ${artifacts.architecture.templateType}`, width, 0),
+      wrapBlock(`Setup: ${artifacts.architecture.setup}`, width, 0),
+      wrapBlock(`Method property: ${artifacts.architecture.methodProperty}`, width, 0),
+      wrapBlock(`Data structure: ${artifacts.architecture.dataStructure}`, width, 0),
+      wrapBlock(`Claimed implication: ${artifacts.architecture.claimedImplication}`, width, 0),
+      ...artifacts.architecture.supportingPassages.map((item, index) => wrapBlock(`Architecture passage ${index + 1}: ${item}`, width, 0)),
+      ...decoderItems.map((item) => wrapBlock(`Decoder: ${item}`, width, 0)),
+      ...claimItems.map((item) => wrapBlock(`Claim map: ${item}`, width, 0)),
+      wrapBlock(`Quality gate verdict: ${artifacts.qualityGate.verdict}`, width, 0),
+      ...qualityChecks.map((item) => wrapBlock(`Check: ${item}`, width, 0)),
+      ...artifacts.qualityGate.issues.map((item) => wrapBlock(`Issue: ${item}`, width, 0)),
+      wrapBlock(`Final revised by gate: ${formatBool(artifacts.qualityGate.verdict === "revise")}`, width, 0),
+    ].join("\n");
+  }
+
+  return [
+    section("Debug: Deconstruction Chain", width, style),
+    "",
+    boxKeyValue(
+      "Argument Architecture Extraction",
+      [
+        { label: "Template Type", value: artifacts.architecture.templateType },
+        { label: "Setup", value: artifacts.architecture.setup },
+        { label: "Method Property", value: artifacts.architecture.methodProperty },
+        { label: "Data Structure", value: artifacts.architecture.dataStructure },
+        { label: "Claimed Implication", value: artifacts.architecture.claimedImplication },
+        { label: "Plain Language Architecture", value: artifacts.architecture.plainLanguageArchitecture },
+      ],
+      width,
+      style,
+    ),
+    "",
+    boxBullets(
+      "Architecture Supporting Passages",
+      artifacts.architecture.supportingPassages.length > 0 ? artifacts.architecture.supportingPassages : ["none"],
+      width,
+      style,
+    ),
+    "",
+    boxBullets("Decoder Selections", decoderItems, width, style),
+    "",
+    boxBullets("Claim-Evidence Extraction", claimItems, width, style),
+    "",
+    boxKeyValue(
+      "Pre-Gate Assembly",
+      [
+        { label: "Argument Architecture", value: artifacts.assembly.argumentArchitecture },
+        { label: "Decoder Rewrite Count", value: String(artifacts.assembly.decoderRewrites.length) },
+        { label: "Claim-Evidence Item Count", value: String(artifacts.assembly.claimEvidenceMap.length) },
+      ],
+      width,
+      style,
+    ),
+    "",
+    boxKeyValue(
+      "Quality Gate",
+      [
+        { label: "Verdict", value: artifacts.qualityGate.verdict },
+        ...qualityChecks.map((item) => {
+          const [label, value] = item.split(": ");
+          return { label, value };
+        }),
+        { label: "Revised Final Result", value: formatBool(artifacts.qualityGate.verdict === "revise") },
+      ],
+      width,
+      style,
+    ),
+    "",
+    boxBullets(
+      "Quality Gate Issues",
+      artifacts.qualityGate.issues.length > 0 ? artifacts.qualityGate.issues : ["none"],
+      width,
+      style,
+    ),
+  ].join("\n");
+}
+
+function formatDeconstructionDebugMarkdown(artifacts: DeconstructionChainArtifacts): string {
+  const architecturePassages =
+    artifacts.architecture.supportingPassages.length > 0
+      ? artifacts.architecture.supportingPassages.map((item) => `- ${item}`).join("\n")
+      : "- none";
+  const decoder = artifacts.decoder.decoderRewrites
+    .map(
+      (item, index) =>
+        `- Rewrite ${index + 1} [${item.sectionGuess}]\n  - Original: ${item.original}\n  - Plain English: ${item.plainEnglish}\n  - Explanation: ${item.explanation}\n  - Why it matters: ${item.whyThisSentenceMatters}`,
+    )
+    .join("\n");
+  const claimMap = artifacts.claimMap.claimEvidenceMap
+    .map(
+      (item, index) =>
+        `- Claim ${index + 1}: ${item.claim}\n  - Evidence: ${item.evidence}\n  - Evidence type: ${item.evidenceType}\n  - Strength: ${item.strength}\n  - Alternative explanation: ${item.alternativeExplanation}\n  - Passage: ${item.supportingPassage}`,
+    )
+    .join("\n");
+  const checks = Object.entries(artifacts.qualityGate.checks)
+    .map(([key, value]) => `- ${key}: ${formatBool(value)}`)
+    .join("\n");
+  const issues = artifacts.qualityGate.issues.length > 0 ? artifacts.qualityGate.issues.map((item) => `- ${item}`).join("\n") : "- none";
+
+  return `## Debug: Deconstruction Chain
+
+### Argument Architecture Extraction
+- Template type: ${artifacts.architecture.templateType}
+- Setup: ${artifacts.architecture.setup}
+- Method property: ${artifacts.architecture.methodProperty}
+- Data structure: ${artifacts.architecture.dataStructure}
+- Claimed implication: ${artifacts.architecture.claimedImplication}
+- Plain language architecture: ${artifacts.architecture.plainLanguageArchitecture}
+
+### Architecture Supporting Passages
+${architecturePassages}
+
+### Decoder Selections
+${decoder}
+
+### Claim-Evidence Extraction
+${claimMap}
+
+### Pre-Gate Assembly
+- Argument architecture: ${artifacts.assembly.argumentArchitecture}
+- Decoder rewrite count: ${artifacts.assembly.decoderRewrites.length}
+- Claim-evidence item count: ${artifacts.assembly.claimEvidenceMap.length}
+
+### Quality Gate
+- Verdict: ${artifacts.qualityGate.verdict}
+- Revised final result: ${formatBool(artifacts.qualityGate.verdict === "revise")}
+${checks}
+
+### Quality Gate Issues
+${issues}`;
+}
+
+export function renderDeconstructionDebug(artifacts: DeconstructionChainArtifacts, options: RenderOptions): string {
+  if (options.format === "json") {
+    return JSON.stringify(artifacts, null, 2);
+  }
+
+  if (options.format === "markdown") {
+    return formatDeconstructionDebugMarkdown(artifacts);
+  }
+
+  return formatDeconstructionDebugPretty(artifacts, options.width ?? 100, options.color ?? false, options.compact ?? false);
 }
 
 export function renderAsk(question: string, result: AskResult, options: RenderOptions): string {

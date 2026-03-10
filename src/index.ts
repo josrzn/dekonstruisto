@@ -4,13 +4,13 @@ import path from "node:path";
 import { readCachedResult, writeCachedResult } from "./cache.js";
 import { getConfig } from "./config.js";
 import { runDeconstructionChain } from "./deconstruct.js";
-import { OutputFormat, renderAsk, renderDeconstruction, renderTriage, renderTriageDebug } from "./format.js";
+import { OutputFormat, renderAsk, renderDeconstruction, renderDeconstructionDebug, renderTriage, renderTriageDebug } from "./format.js";
 import { generateStructuredOutput } from "./llm.js";
 import { extractPaperText } from "./pdf.js";
 import { buildAskPrompt, DECONSTRUCTION_CHAIN_VERSION, TRIAGE_CHAIN_VERSION } from "./prompts.js";
 import { Spinner } from "./spinner.js";
 import { runTriageChain } from "./triage.js";
-import { AskResult, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
+import { AskResult, DeconstructionChainArtifacts, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
 
 interface ParsedArgs {
   command?: string;
@@ -39,7 +39,7 @@ Shortcuts:
   --markdown    same as --format markdown
   --json        same as --format json
   --compact     denser pretty output for terminal scanning
-  --debug       show triage chain artifacts (extraction, pre-gate synthesis, quality gate)
+  --debug       show triage/deconstruct chain artifacts and quality-gate internals
   --force       bypass cached triage/deconstruction and regenerate
   --no-cache    do not read from or write to cache
   --no-color    disable ANSI colors in pretty output
@@ -242,8 +242,10 @@ async function main(): Promise<void> {
 
   if (args.command === "deconstruct") {
     let result: DeconstructionResult | null = null;
+    let artifacts: DeconstructionChainArtifacts | null = null;
+    const canReadDeconstructionCache = cacheEnabled && !args.force && !args.debug;
 
-    if (cacheEnabled && !args.force) {
+    if (canReadDeconstructionCache) {
       spinner.update("Checking deconstruction cache...");
       result = await readCachedResult<DeconstructionResult>({
         command: "deconstruct",
@@ -257,13 +259,15 @@ async function main(): Promise<void> {
       spinner.stop("Loaded cached deconstruction.");
     } else {
       spinner.update(
-        args.force
-          ? "Regenerating deconstruction..."
-          : cacheEnabled
-            ? "Running deconstruction chain..."
-            : "Running deconstruction chain without cache...",
+        args.debug
+          ? "Running deconstruction chain with debug artifacts..."
+          : args.force
+            ? "Regenerating deconstruction..."
+            : cacheEnabled
+              ? "Running deconstruction chain..."
+              : "Running deconstruction chain without cache...",
       );
-      const artifacts = await runDeconstructionChain(paper.fileName, paper.text, spinner);
+      artifacts = await runDeconstructionChain(paper.fileName, paper.text, spinner);
       result = artifacts.finalResult;
       if (cacheEnabled) {
         await writeCachedResult(
@@ -277,6 +281,38 @@ async function main(): Promise<void> {
         );
       }
       spinner.stop();
+    }
+
+    if (args.debug) {
+      if (!artifacts) {
+        artifacts = await runDeconstructionChain(paper.fileName, paper.text);
+      }
+
+      if (format === "json") {
+        const debugJson = JSON.stringify(
+          {
+            deconstruction: result,
+            debug: artifacts,
+          },
+          null,
+          2,
+        );
+        console.log(debugJson);
+        await writeIfRequested(args.outPath, debugJson);
+        return;
+      }
+
+      const terminalOutput = [
+        renderDeconstruction(result, { format, color: useColor, width: prettyWidth, compact }),
+        renderDeconstructionDebug(artifacts, { format, color: useColor, width: prettyWidth, compact }),
+      ].join("\n\n");
+      const fileOutput = [
+        renderDeconstruction(result, { format, color: false, width: prettyWidth, compact }),
+        renderDeconstructionDebug(artifacts, { format, color: false, width: prettyWidth, compact }),
+      ].join("\n\n");
+      console.log(terminalOutput);
+      await writeIfRequested(args.outPath, fileOutput);
+      return;
     }
 
     const terminalOutput = renderDeconstruction(result, { format, color: useColor, width: prettyWidth, compact });
