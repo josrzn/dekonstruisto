@@ -9,8 +9,10 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - `ask`: asks a follow-up question against the paper text
 - PDF, TXT, and Markdown input support
 - terminal-friendly pretty output by default
+- richer pretty-mode styling with Unicode box drawing
 - optional compact terminal mode for denser scanning
 - optional Markdown and JSON output modes
+- spinner feedback while reading and analyzing in interactive terminals
 - OpenAI-compatible LLM backend via environment variables
 
 ## Simple stack

@@ -33,60 +33,120 @@ function createStyler(enabled: boolean): Styler {
   };
 }
 
+function stripAnsi(value: string): string {
+  return value.replace(/\u001b\[[0-9;]*m/g, "");
+}
+
 function normalizeInline(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function wrapWithPrefix(text: string, width: number, firstPrefix = "", restPrefix = firstPrefix): string {
+function wrapLines(text: string, width: number, firstPrefix = "", restPrefix = firstPrefix): string[] {
   const paragraphs = text.split(/\n\s*\n/).map((paragraph) => normalizeInline(paragraph)).filter(Boolean);
 
   if (paragraphs.length === 0) {
-    return firstPrefix.trimEnd();
+    return [firstPrefix.trimEnd()];
   }
 
-  return paragraphs
-    .map((paragraph, paragraphIndex) => {
-      const words = paragraph.split(" ");
-      const lines: string[] = [];
-      let current = paragraphIndex === 0 ? firstPrefix : restPrefix;
-      const firstLinePrefix = paragraphIndex === 0 ? firstPrefix : restPrefix;
-      let currentPrefix = firstLinePrefix;
+  const lines: string[] = [];
 
-      for (const word of words) {
-        const candidate = current.trim().length === currentPrefix.trim().length ? `${current}${word}` : `${current} ${word}`;
+  paragraphs.forEach((paragraph, paragraphIndex) => {
+    const words = paragraph.split(" ");
+    let currentPrefix = paragraphIndex === 0 ? firstPrefix : restPrefix;
+    let current = currentPrefix;
 
-        if (candidate.length <= width || current.trim().length === currentPrefix.trim().length) {
-          current = candidate;
-        } else {
-          lines.push(current);
-          currentPrefix = restPrefix;
-          current = `${restPrefix}${word}`;
-        }
+    for (const word of words) {
+      const hasContent = stripAnsi(current).trim().length > stripAnsi(currentPrefix).trim().length;
+      const candidate = hasContent ? `${current} ${word}` : `${current}${word}`;
+
+      if (stripAnsi(candidate).length <= width || !hasContent) {
+        current = candidate;
+      } else {
+        lines.push(current);
+        currentPrefix = restPrefix;
+        current = `${restPrefix}${word}`;
       }
+    }
 
-      lines.push(current);
-      return lines.join("\n");
-    })
-    .join("\n\n");
+    lines.push(current);
+
+    if (paragraphIndex < paragraphs.length - 1) {
+      lines.push("");
+    }
+  });
+
+  return lines;
+}
+
+function wrapWithPrefix(text: string, width: number, firstPrefix = "", restPrefix = firstPrefix): string {
+  return wrapLines(text, width, firstPrefix, restPrefix).join("\n");
 }
 
 function wrapBlock(text: string, width: number, indent = 2): string {
   return wrapWithPrefix(text, width, " ".repeat(indent), " ".repeat(indent));
 }
 
-function wrapBullet(text: string, width: number, indent = 2): string {
-  const firstPrefix = `${" ".repeat(indent)}- `;
+function wrapBullet(text: string, width: number, indent = 2, marker = "•"): string {
+  const firstPrefix = `${" ".repeat(indent)}${marker} `;
   const restPrefix = " ".repeat(firstPrefix.length);
   return wrapWithPrefix(text, width, firstPrefix, restPrefix);
 }
 
+function padRight(text: string, width: number): string {
+  const visibleLength = stripAnsi(text).length;
+  return visibleLength >= width ? text : `${text}${" ".repeat(width - visibleLength)}`;
+}
+
+function rule(width: number, style: Styler): string {
+  return style.cyan("─".repeat(Math.max(12, width)));
+}
+
 function section(title: string, width: number, style: Styler): string {
-  const plainLine = "-".repeat(Math.min(Math.max(title.length, 12), Math.max(12, width)));
-  return `${style.bold(style.cyan(title))}\n${style.dim(plainLine)}`;
+  return `${style.bold(style.cyan(title))}\n${rule(Math.min(Math.max(title.length + 6, 12), width), style)}`;
 }
 
 function subheading(title: string, style: Styler): string {
   return style.bold(title);
+}
+
+function titleBlock(title: string, width: number, style: Styler): string {
+  const visibleWidth = Math.max(20, Math.min(width, 120));
+  const line = style.cyan("═".repeat(Math.min(Math.max(stripAnsi(title).length, 12), visibleWidth)));
+  return `${style.bold(title)}\n${line}`;
+}
+
+function makeBox(title: string, bodyLines: string[], width: number, style: Styler): string {
+  const outerWidth = Math.max(40, Math.min(width, 120));
+  const innerWidth = outerWidth - 4;
+  const titleText = ` ${title} `;
+  const titleLen = stripAnsi(titleText).length;
+  const borderWidth = innerWidth + 2;
+  const leftBorder = 1;
+  const rightBorder = Math.max(0, borderWidth - leftBorder - titleLen);
+  const top = `${style.cyan("┌")}${style.cyan("─".repeat(leftBorder))}${style.bold(style.cyan(titleText))}${style.cyan("─".repeat(rightBorder))}${style.cyan("┐")}`;
+  const bottom = `${style.cyan("└")}${style.cyan("─".repeat(borderWidth))}${style.cyan("┘")}`;
+
+  const lines = bodyLines.length > 0 ? bodyLines : [""];
+  const body = lines.map((line) => `${style.cyan("│")} ${padRight(line, innerWidth)} ${style.cyan("│")}`).join("\n");
+
+  return `${top}\n${body}\n${bottom}`;
+}
+
+function boxText(title: string, text: string, width: number, style: Styler): string {
+  const innerWidth = Math.max(20, Math.min(width, 120) - 4);
+  return makeBox(title, wrapLines(text, innerWidth), width, style);
+}
+
+function boxBullets(title: string, items: string[], width: number, style: Styler): string {
+  const innerWidth = Math.max(20, Math.min(width, 120) - 4);
+  const lines = items.flatMap((item) => wrapLines(item, innerWidth, "• ", "  "));
+  return makeBox(title, lines, width, style);
+}
+
+function boxKeyValue(title: string, rows: Array<{ label: string; value: string }>, width: number, style: Styler): string {
+  const innerWidth = Math.max(20, Math.min(width, 120) - 4);
+  const lines = rows.flatMap((row) => wrapLines(`${row.label}: ${row.value}`, innerWidth));
+  return makeBox(title, lines, width, style);
 }
 
 function formatVerdict(verdict: TriageResult["investmentRecommendation"]["verdict"], style: Styler): string {
@@ -118,8 +178,7 @@ function formatTriagePretty(result: TriageResult, width: number, color: boolean,
 
   if (compact) {
     return [
-      style.bold(title),
-      style.dim("=".repeat(Math.min(title.length, width))),
+      titleBlock(title, width, style),
       wrapBlock(`Thesis: ${result.oneLineThesis}`, width, 0),
       wrapBlock(`Type: ${result.contributionType.join(", ")}`, width, 0),
       wrapBlock(
@@ -128,42 +187,54 @@ function formatTriagePretty(result: TriageResult, width: number, color: boolean,
         0,
       ),
       wrapBlock(`Strongest evidence: ${result.strongestEvidence.summary}`, width, 0),
-      wrapBlock(`  Passage: ${result.strongestEvidence.supportingPassage}`, width, 0),
+      wrapBlock(`Passage: ${result.strongestEvidence.supportingPassage}`, width, 0),
       wrapBlock(`Weakest link: ${result.weakestLink.summary}`, width, 0),
-      wrapBlock(`  Passage: ${result.weakestLink.supportingPassage}`, width, 0),
+      wrapBlock(`Passage: ${result.weakestLink.supportingPassage}`, width, 0),
       wrapBlock(`Recommendation: ${formatVerdict(result.investmentRecommendation.verdict, style)} — ${result.investmentRecommendation.justification}`, width, 0),
     ].join("\n");
   }
 
   return [
-    style.bold(title),
-    style.dim("=".repeat(Math.min(title.length, width))),
+    titleBlock(title, width, style),
     "",
-    section("Triage Card", width, style),
+    makeBox("Triage Card", [
+      ...wrapLines(result.oneLineThesis, Math.max(20, Math.min(width, 120) - 4), "Thesis: ", "        "),
+      "",
+      ...wrapLines(result.contributionType.join(", "), Math.max(20, Math.min(width, 120) - 4), "Type: ", "      "),
+    ], width, style),
     "",
-    subheading("One-line thesis", style),
-    wrapBlock(result.oneLineThesis, width),
+    boxKeyValue(
+      "Mechanism Decomposition",
+      [
+        { label: "Bias / Method", value: result.mechanismDecomposition.biasOrMethod },
+        { label: "Data / Structure", value: result.mechanismDecomposition.dataOrStructure },
+        { label: "Claimed Effect", value: result.mechanismDecomposition.claimedEffect },
+        { label: "Why Authors Expect It", value: result.mechanismDecomposition.whyAuthorsExpectIt },
+      ],
+      width,
+      style,
+    ),
     "",
-    subheading("Contribution type", style),
-    result.contributionType.map((item) => wrapBullet(item, width)).join("\n"),
+    boxText(
+      "Strongest Evidence",
+      `${result.strongestEvidence.summary}\n\nPassage: ${result.strongestEvidence.supportingPassage}`,
+      width,
+      style,
+    ),
     "",
-    subheading("Mechanism decomposition", style),
-    wrapBlock(`Bias / Method: ${result.mechanismDecomposition.biasOrMethod}`, width),
-    wrapBlock(`Data / Structure: ${result.mechanismDecomposition.dataOrStructure}`, width),
-    wrapBlock(`Claimed Effect: ${result.mechanismDecomposition.claimedEffect}`, width),
-    wrapBlock(`Why Authors Expect It: ${result.mechanismDecomposition.whyAuthorsExpectIt}`, width),
+    boxText(
+      "Weakest Link",
+      `${result.weakestLink.summary}\n\nPassage: ${result.weakestLink.supportingPassage}`,
+      width,
+      style,
+    ),
     "",
-    subheading("Strongest evidence", style),
-    wrapBlock(result.strongestEvidence.summary, width),
-    wrapBlock(`Passage: ${result.strongestEvidence.supportingPassage}`, width, 4),
-    "",
-    subheading("Weakest link", style),
-    wrapBlock(result.weakestLink.summary, width),
-    wrapBlock(`Passage: ${result.weakestLink.supportingPassage}`, width, 4),
-    "",
-    subheading("Recommendation", style),
-    wrapBlock(formatVerdict(result.investmentRecommendation.verdict, style), width),
-    wrapBlock(result.investmentRecommendation.justification, width),
+    boxText(
+      "Recommendation",
+      `${formatVerdict(result.investmentRecommendation.verdict, style)}\n\n${result.investmentRecommendation.justification}`,
+      width,
+      style,
+    ),
   ].join("\n");
 }
 
@@ -206,58 +277,67 @@ function formatDeconstructionPretty(result: DeconstructionResult, width: number,
   if (compact) {
     const rewritesCompact = result.decoderRewrites.flatMap((item, index) => [
       wrapBlock(`Rewrite ${index + 1}: ${item.original}`, width, 0),
-      wrapBlock(`  Plain English: ${item.plainEnglish}`, width, 0),
-      wrapBlock(`  Meaning: ${item.explanation}`, width, 0),
+      wrapBlock(`Plain English: ${item.plainEnglish}`, width, 0),
+      wrapBlock(`Meaning: ${item.explanation}`, width, 0),
     ]);
 
     const claimMapCompact = result.claimEvidenceMap.flatMap((item, index) => [
       wrapBlock(`Claim ${index + 1}: ${item.claim}`, width, 0),
-      wrapBlock(`  Evidence: ${item.evidence}`, width, 0),
-      wrapBlock(`  Type: ${item.evidenceType}; Strength: ${formatStrength(item.strength, style)}`, width, 0),
-      wrapBlock(`  Alt: ${item.alternativeExplanation}`, width, 0),
+      wrapBlock(`Evidence: ${item.evidence}`, width, 0),
+      wrapBlock(`Type: ${item.evidenceType}; Strength: ${formatStrength(item.strength, style)}`, width, 0),
+      wrapBlock(`Alt: ${item.alternativeExplanation}`, width, 0),
     ]);
 
     return [
-      style.bold(title),
-      style.dim("=".repeat(Math.min(title.length, width))),
+      titleBlock(title, width, style),
       wrapBlock(`Architecture: ${result.argumentArchitecture}`, width, 0),
       style.bold(style.cyan("Rewrites")),
+      rule(Math.min(width, 24), style),
       ...rewritesCompact,
       style.bold(style.cyan("Claim-Evidence Map")),
+      rule(Math.min(width, 24), style),
       ...claimMapCompact,
     ].join("\n");
   }
 
-  const rewrites = result.decoderRewrites.flatMap((item, index) => [
-    "",
-    subheading(`Rewrite ${index + 1}`, style),
-    wrapBlock(`Original: ${item.original}`, width),
-    wrapBlock(`Plain English: ${item.plainEnglish}`, width),
-    wrapBlock(`What it really means: ${item.explanation}`, width),
-  ]);
+  const rewriteBoxes = result.decoderRewrites.map((item, index) =>
+    boxKeyValue(
+      `Rewrite ${index + 1}`,
+      [
+        { label: "Original", value: item.original },
+        { label: "Plain English", value: item.plainEnglish },
+        { label: "What it really means", value: item.explanation },
+      ],
+      width,
+      style,
+    ),
+  );
 
-  const claimMap = result.claimEvidenceMap.flatMap((item, index) => [
-    "",
-    subheading(`Claim ${index + 1}`, style),
-    wrapBlock(`Claim: ${item.claim}`, width),
-    wrapBlock(`Evidence: ${item.evidence}`, width),
-    wrapBlock(`Evidence Type: ${item.evidenceType}`, width),
-    wrapBlock(`Strength: ${formatStrength(item.strength, style)}`, width),
-    wrapBlock(`Alternative Explanation: ${item.alternativeExplanation}`, width),
-  ]);
+  const claimBoxes = result.claimEvidenceMap.map((item, index) =>
+    boxKeyValue(
+      `Claim ${index + 1}`,
+      [
+        { label: "Claim", value: item.claim },
+        { label: "Evidence", value: item.evidence },
+        { label: "Evidence Type", value: item.evidenceType },
+        { label: "Strength", value: formatStrength(item.strength, style) },
+        { label: "Alternative Explanation", value: item.alternativeExplanation },
+      ],
+      width,
+      style,
+    ),
+  );
 
   return [
-    style.bold(title),
-    style.dim("=".repeat(Math.min(title.length, width))),
+    titleBlock(title, width, style),
     "",
-    section("Argument Architecture", width, style),
-    wrapBlock(result.argumentArchitecture, width),
+    boxText("Argument Architecture", result.argumentArchitecture, width, style),
     "",
     section("Paper Decoder Rewrites", width, style),
-    ...rewrites,
+    ...rewriteBoxes.flatMap((box) => ["", box]),
     "",
     section("Claim-Evidence Map", width, style),
-    ...claimMap,
+    ...claimBoxes.flatMap((box) => ["", box]),
   ].join("\n");
 }
 
@@ -305,8 +385,7 @@ function formatAskPretty(question: string, result: AskResult, width: number, col
 
   if (compact) {
     return [
-      style.bold("Follow-up Question"),
-      style.dim("=".repeat(Math.min(18, width))),
+      titleBlock("Follow-up Question", width, style),
       wrapBlock(`Q: ${question}`, width, 0),
       wrapBlock(`A: ${result.answer}`, width, 0),
       wrapBlock(`Confidence: ${result.confidence}`, width, 0),
@@ -315,21 +394,21 @@ function formatAskPretty(question: string, result: AskResult, width: number, col
   }
 
   return [
-    style.bold("Follow-up Question"),
-    style.dim("=".repeat(Math.min(18, width))),
+    titleBlock("Follow-up Question", width, style),
     "",
-    subheading("Question", style),
-    wrapBlock(question, width),
+    boxKeyValue(
+      "Question & Answer",
+      [
+        { label: "Question", value: question },
+        { label: "Answer", value: result.answer },
+        { label: "Confidence", value: result.confidence },
+      ],
+      width,
+      style,
+    ),
     "",
-    subheading("Answer", style),
-    wrapBlock(result.answer, width),
-    "",
-    subheading("Confidence", style),
-    wrapBlock(result.confidence, width),
-    "",
-    section("Cited Passages", width, style),
-    ...result.citedPassages.flatMap((passage) => [wrapBullet(passage, width), ""]),
-  ].join("\n").trimEnd();
+    boxBullets("Cited Passages", result.citedPassages, width, style),
+  ].join("\n");
 }
 
 export function formatAskMarkdown(question: string, result: AskResult): string {

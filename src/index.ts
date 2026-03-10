@@ -6,6 +6,7 @@ import { OutputFormat, renderAsk, renderDeconstruction, renderTriage } from "./f
 import { generateStructuredOutput } from "./llm.js";
 import { extractPaperText } from "./pdf.js";
 import { buildAskPrompt, buildDeconstructionPrompt, buildTriagePrompt } from "./prompts.js";
+import { Spinner } from "./spinner.js";
 import { AskResult, DeconstructionResult, TriageResult } from "./types.js";
 
 interface ParsedArgs {
@@ -17,6 +18,8 @@ interface ParsedArgs {
   noColor?: boolean;
   compact?: boolean;
 }
+
+let activeSpinner: Spinner | undefined;
 
 function printHelp(): void {
   console.log(`Paper Deconstructor CLI
@@ -31,6 +34,10 @@ Shortcuts:
   --json        same as --format json
   --compact     denser pretty output for terminal scanning
   --no-color    disable ANSI colors in pretty output
+
+Interactive UX:
+  pretty mode uses richer box-drawing styling
+  a spinner is shown while reading and analyzing when run in a TTY
 
 Defaults:
   format defaults to pretty in the terminal
@@ -125,15 +132,21 @@ async function main(): Promise<void> {
   }
 
   const config = getConfig();
-  const paper = await extractPaperText(args.filePath, config.maxContextChars);
   const format = resolveFormat(args);
   const prettyWidth = getPrettyWidth();
   const useColor = format === "pretty" && process.stdout.isTTY && !args.noColor;
   const compact = format === "pretty" && !!args.compact;
+  const spinner = new Spinner(process.stdout.isTTY && process.stderr.isTTY);
+  activeSpinner = spinner;
+
+  spinner.start("Reading paper...");
+  const paper = await extractPaperText(args.filePath, config.maxContextChars);
 
   if (args.command === "triage") {
+    spinner.update("Triaging...");
     const prompt = buildTriagePrompt(paper.fileName, paper.text);
     const result = await generateStructuredOutput<TriageResult>(prompt);
+    spinner.stop();
     const terminalOutput = renderTriage(result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
     const fileOutput = renderTriage(result, { format, color: false, width: prettyWidth, compact });
@@ -142,8 +155,10 @@ async function main(): Promise<void> {
   }
 
   if (args.command === "deconstruct") {
+    spinner.update("Deconstructing...");
     const prompt = buildDeconstructionPrompt(paper.fileName, paper.text);
     const result = await generateStructuredOutput<DeconstructionResult>(prompt);
+    spinner.stop();
     const terminalOutput = renderDeconstruction(result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
     const fileOutput = renderDeconstruction(result, { format, color: false, width: prettyWidth, compact });
@@ -153,11 +168,14 @@ async function main(): Promise<void> {
 
   if (args.command === "ask") {
     if (!args.question) {
+      spinner.stop();
       throw new Error("Missing --question for ask command.");
     }
 
+    spinner.update("Answering follow-up question...");
     const prompt = buildAskPrompt(paper.fileName, paper.text, args.question);
     const result = await generateStructuredOutput<AskResult>(prompt);
+    spinner.stop();
     const terminalOutput = renderAsk(args.question, result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
     const fileOutput = renderAsk(args.question, result, { format, color: false, width: prettyWidth, compact });
@@ -169,6 +187,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
+  activeSpinner?.stop();
   const message = error instanceof Error ? error.message : String(error);
   console.error(`Error: ${message}`);
   process.exit(1);
