@@ -6,6 +6,7 @@ interface RenderOptions {
   format: OutputFormat;
   color?: boolean;
   width?: number;
+  compact?: boolean;
 }
 
 interface Styler {
@@ -111,9 +112,28 @@ function formatStrength(strength: "strong" | "moderate" | "weak", style: Styler)
   return style.yellow(strength);
 }
 
-function formatTriagePretty(result: TriageResult, width: number, color: boolean): string {
+function formatTriagePretty(result: TriageResult, width: number, color: boolean, compact: boolean): string {
   const style = createStyler(color);
   const title = result.title || "Untitled Paper";
+
+  if (compact) {
+    return [
+      style.bold(title),
+      style.dim("=".repeat(Math.min(title.length, width))),
+      wrapBlock(`Thesis: ${result.oneLineThesis}`, width, 0),
+      wrapBlock(`Type: ${result.contributionType.join(", ")}`, width, 0),
+      wrapBlock(
+        `Mechanism: Bias/Method=${result.mechanismDecomposition.biasOrMethod}; Data/Structure=${result.mechanismDecomposition.dataOrStructure}; Claimed Effect=${result.mechanismDecomposition.claimedEffect}; Why=${result.mechanismDecomposition.whyAuthorsExpectIt}`,
+        width,
+        0,
+      ),
+      wrapBlock(`Strongest evidence: ${result.strongestEvidence.summary}`, width, 0),
+      wrapBlock(`  Passage: ${result.strongestEvidence.supportingPassage}`, width, 0),
+      wrapBlock(`Weakest link: ${result.weakestLink.summary}`, width, 0),
+      wrapBlock(`  Passage: ${result.weakestLink.supportingPassage}`, width, 0),
+      wrapBlock(`Recommendation: ${formatVerdict(result.investmentRecommendation.verdict, style)} — ${result.investmentRecommendation.justification}`, width, 0),
+    ].join("\n");
+  }
 
   return [
     style.bold(title),
@@ -179,9 +199,34 @@ ${result.weakestLink.summary}
 `;
 }
 
-function formatDeconstructionPretty(result: DeconstructionResult, width: number, color: boolean): string {
+function formatDeconstructionPretty(result: DeconstructionResult, width: number, color: boolean, compact: boolean): string {
   const style = createStyler(color);
   const title = result.title || "Untitled Paper";
+
+  if (compact) {
+    const rewritesCompact = result.decoderRewrites.flatMap((item, index) => [
+      wrapBlock(`Rewrite ${index + 1}: ${item.original}`, width, 0),
+      wrapBlock(`  Plain English: ${item.plainEnglish}`, width, 0),
+      wrapBlock(`  Meaning: ${item.explanation}`, width, 0),
+    ]);
+
+    const claimMapCompact = result.claimEvidenceMap.flatMap((item, index) => [
+      wrapBlock(`Claim ${index + 1}: ${item.claim}`, width, 0),
+      wrapBlock(`  Evidence: ${item.evidence}`, width, 0),
+      wrapBlock(`  Type: ${item.evidenceType}; Strength: ${formatStrength(item.strength, style)}`, width, 0),
+      wrapBlock(`  Alt: ${item.alternativeExplanation}`, width, 0),
+    ]);
+
+    return [
+      style.bold(title),
+      style.dim("=".repeat(Math.min(title.length, width))),
+      wrapBlock(`Architecture: ${result.argumentArchitecture}`, width, 0),
+      style.bold(style.cyan("Rewrites")),
+      ...rewritesCompact,
+      style.bold(style.cyan("Claim-Evidence Map")),
+      ...claimMapCompact,
+    ].join("\n");
+  }
 
   const rewrites = result.decoderRewrites.flatMap((item, index) => [
     "",
@@ -255,8 +300,19 @@ ${claimMap}
 `;
 }
 
-function formatAskPretty(question: string, result: AskResult, width: number, color: boolean): string {
+function formatAskPretty(question: string, result: AskResult, width: number, color: boolean, compact: boolean): string {
   const style = createStyler(color);
+
+  if (compact) {
+    return [
+      style.bold("Follow-up Question"),
+      style.dim("=".repeat(Math.min(18, width))),
+      wrapBlock(`Q: ${question}`, width, 0),
+      wrapBlock(`A: ${result.answer}`, width, 0),
+      wrapBlock(`Confidence: ${result.confidence}`, width, 0),
+      ...result.citedPassages.map((passage, index) => wrapBlock(`Passage ${index + 1}: ${passage}`, width, 0)),
+    ].join("\n");
+  }
 
   return [
     style.bold("Follow-up Question"),
@@ -303,7 +359,7 @@ export function renderTriage(result: TriageResult, options: RenderOptions): stri
     return formatTriageMarkdown(result);
   }
 
-  return formatTriagePretty(result, options.width ?? 100, options.color ?? false);
+  return formatTriagePretty(result, options.width ?? 100, options.color ?? false, options.compact ?? false);
 }
 
 export function renderDeconstruction(result: DeconstructionResult, options: RenderOptions): string {
@@ -315,7 +371,7 @@ export function renderDeconstruction(result: DeconstructionResult, options: Rend
     return formatDeconstructionMarkdown(result);
   }
 
-  return formatDeconstructionPretty(result, options.width ?? 100, options.color ?? false);
+  return formatDeconstructionPretty(result, options.width ?? 100, options.color ?? false, options.compact ?? false);
 }
 
 export function renderAsk(question: string, result: AskResult, options: RenderOptions): string {
@@ -327,5 +383,5 @@ export function renderAsk(question: string, result: AskResult, options: RenderOp
     return formatAskMarkdown(question, result);
   }
 
-  return formatAskPretty(question, result, options.width ?? 100, options.color ?? false);
+  return formatAskPretty(question, result, options.width ?? 100, options.color ?? false, options.compact ?? false);
 }

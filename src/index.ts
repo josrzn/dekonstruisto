@@ -15,6 +15,7 @@ interface ParsedArgs {
   question?: string;
   format?: OutputFormat;
   noColor?: boolean;
+  compact?: boolean;
 }
 
 function printHelp(): void {
@@ -28,6 +29,7 @@ Usage:
 Shortcuts:
   --markdown    same as --format markdown
   --json        same as --format json
+  --compact     denser pretty output for terminal scanning
   --no-color    disable ANSI colors in pretty output
 
 Defaults:
@@ -67,6 +69,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       parsed.format = "json";
     } else if (token === "--no-color") {
       parsed.noColor = true;
+    } else if (token === "--compact") {
+      parsed.compact = true;
     }
   }
 
@@ -125,13 +129,14 @@ async function main(): Promise<void> {
   const format = resolveFormat(args);
   const prettyWidth = getPrettyWidth();
   const useColor = format === "pretty" && process.stdout.isTTY && !args.noColor;
+  const compact = format === "pretty" && !!args.compact;
 
   if (args.command === "triage") {
     const prompt = buildTriagePrompt(paper.fileName, paper.text);
     const result = await generateStructuredOutput<TriageResult>(prompt);
-    const terminalOutput = renderTriage(result, { format, color: useColor, width: prettyWidth });
+    const terminalOutput = renderTriage(result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
-    const fileOutput = renderTriage(result, { format, color: false, width: prettyWidth });
+    const fileOutput = renderTriage(result, { format, color: false, width: prettyWidth, compact });
     await writeIfRequested(args.outPath, fileOutput);
     return;
   }
@@ -139,9 +144,9 @@ async function main(): Promise<void> {
   if (args.command === "deconstruct") {
     const prompt = buildDeconstructionPrompt(paper.fileName, paper.text);
     const result = await generateStructuredOutput<DeconstructionResult>(prompt);
-    const terminalOutput = renderDeconstruction(result, { format, color: useColor, width: prettyWidth });
+    const terminalOutput = renderDeconstruction(result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
-    const fileOutput = renderDeconstruction(result, { format, color: false, width: prettyWidth });
+    const fileOutput = renderDeconstruction(result, { format, color: false, width: prettyWidth, compact });
     await writeIfRequested(args.outPath, fileOutput);
     return;
   }
@@ -153,9 +158,9 @@ async function main(): Promise<void> {
 
     const prompt = buildAskPrompt(paper.fileName, paper.text, args.question);
     const result = await generateStructuredOutput<AskResult>(prompt);
-    const terminalOutput = renderAsk(args.question, result, { format, color: useColor, width: prettyWidth });
+    const terminalOutput = renderAsk(args.question, result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
-    const fileOutput = renderAsk(args.question, result, { format, color: false, width: prettyWidth });
+    const fileOutput = renderAsk(args.question, result, { format, color: false, width: prettyWidth, compact });
     await writeIfRequested(args.outPath, fileOutput);
     return;
   }

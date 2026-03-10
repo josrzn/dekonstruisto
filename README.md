@@ -9,6 +9,7 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - `ask`: asks a follow-up question against the paper text
 - PDF, TXT, and Markdown input support
 - terminal-friendly pretty output by default
+- optional compact terminal mode for denser scanning
 - optional Markdown and JSON output modes
 - OpenAI-compatible LLM backend via environment variables
 
@@ -57,6 +58,12 @@ npm run dev -- ask path/to/paper.pdf --question "What is the weakest link in the
 ## Output formats
 
 The CLI defaults to a terminal-friendly `pretty` format.
+
+### Compact terminal output
+
+```bash
+npm run dev -- triage path/to/paper.pdf --compact
+```
 
 ### Markdown
 
