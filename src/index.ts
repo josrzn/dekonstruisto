@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import path from "node:path";
+import { readCachedResult, writeCachedResult } from "./cache.js";
 import { getConfig } from "./config.js";
 import { OutputFormat, renderAsk, renderDeconstruction, renderTriage } from "./format.js";
 import { generateStructuredOutput } from "./llm.js";
 import { extractPaperText } from "./pdf.js";
-import { buildAskPrompt, buildDeconstructionPrompt, buildTriagePrompt } from "./prompts.js";
+import {
+  buildAskPrompt,
+  buildDeconstructionPrompt,
+  buildTriagePrompt,
+  DECONSTRUCTION_PROMPT_VERSION,
+  TRIAGE_PROMPT_VERSION,
+} from "./prompts.js";
 import { Spinner } from "./spinner.js";
 import { AskResult, DeconstructionResult, TriageResult } from "./types.js";
 
@@ -17,6 +24,7 @@ interface ParsedArgs {
   format?: OutputFormat;
   noColor?: boolean;
   compact?: boolean;
+  force?: boolean;
 }
 
 let activeSpinner: Spinner | undefined;
@@ -33,6 +41,7 @@ Shortcuts:
   --markdown    same as --format markdown
   --json        same as --format json
   --compact     denser pretty output for terminal scanning
+  --force       bypass cached triage/deconstruction and regenerate
   --no-color    disable ANSI colors in pretty output
 
 Interactive UX:
@@ -78,6 +87,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       parsed.noColor = true;
     } else if (token === "--compact") {
       parsed.compact = true;
+    } else if (token === "--force") {
+      parsed.force = true;
     }
   }
 
@@ -143,10 +154,36 @@ async function main(): Promise<void> {
   const paper = await extractPaperText(args.filePath, config.maxContextChars);
 
   if (args.command === "triage") {
-    spinner.update("Triaging...");
-    const prompt = buildTriagePrompt(paper.fileName, paper.text);
-    const result = await generateStructuredOutput<TriageResult>(prompt);
-    spinner.stop();
+    let result: TriageResult | null = null;
+
+    if (!args.force) {
+      spinner.update("Checking triage cache...");
+      result = await readCachedResult<TriageResult>({
+        command: "triage",
+        model: config.model,
+        promptVersion: TRIAGE_PROMPT_VERSION,
+        paperText: paper.text,
+      });
+    }
+
+    if (result) {
+      spinner.stop("Loaded cached triage.");
+    } else {
+      spinner.update(args.force ? "Regenerating triage..." : "Triaging...");
+      const prompt = buildTriagePrompt(paper.fileName, paper.text);
+      result = await generateStructuredOutput<TriageResult>(prompt);
+      await writeCachedResult(
+        {
+          command: "triage",
+          model: config.model,
+          promptVersion: TRIAGE_PROMPT_VERSION,
+          paperText: paper.text,
+        },
+        result,
+      );
+      spinner.stop();
+    }
+
     const terminalOutput = renderTriage(result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
     const fileOutput = renderTriage(result, { format, color: false, width: prettyWidth, compact });
@@ -155,10 +192,36 @@ async function main(): Promise<void> {
   }
 
   if (args.command === "deconstruct") {
-    spinner.update("Deconstructing...");
-    const prompt = buildDeconstructionPrompt(paper.fileName, paper.text);
-    const result = await generateStructuredOutput<DeconstructionResult>(prompt);
-    spinner.stop();
+    let result: DeconstructionResult | null = null;
+
+    if (!args.force) {
+      spinner.update("Checking deconstruction cache...");
+      result = await readCachedResult<DeconstructionResult>({
+        command: "deconstruct",
+        model: config.model,
+        promptVersion: DECONSTRUCTION_PROMPT_VERSION,
+        paperText: paper.text,
+      });
+    }
+
+    if (result) {
+      spinner.stop("Loaded cached deconstruction.");
+    } else {
+      spinner.update(args.force ? "Regenerating deconstruction..." : "Deconstructing...");
+      const prompt = buildDeconstructionPrompt(paper.fileName, paper.text);
+      result = await generateStructuredOutput<DeconstructionResult>(prompt);
+      await writeCachedResult(
+        {
+          command: "deconstruct",
+          model: config.model,
+          promptVersion: DECONSTRUCTION_PROMPT_VERSION,
+          paperText: paper.text,
+        },
+        result,
+      );
+      spinner.stop();
+    }
+
     const terminalOutput = renderDeconstruction(result, { format, color: useColor, width: prettyWidth, compact });
     console.log(terminalOutput);
     const fileOutput = renderDeconstruction(result, { format, color: false, width: prettyWidth, compact });

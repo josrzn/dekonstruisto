@@ -1,3 +1,6 @@
+export const TRIAGE_PROMPT_VERSION = "v1";
+export const DECONSTRUCTION_PROMPT_VERSION = "v1";
+
 export const BASE_SYSTEM_PROMPT = `You are Paper Deconstructor, a skeptical but fair research judgment assistant.
 
 Rules:

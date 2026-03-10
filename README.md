@@ -13,6 +13,7 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - optional compact terminal mode for denser scanning
 - optional Markdown and JSON output modes
 - spinner feedback while reading and analyzing in interactive terminals
+- local caching for triage and deconstruction results
 - OpenAI-compatible LLM backend via environment variables
 
 ## Simple stack
@@ -67,6 +68,15 @@ The CLI defaults to a terminal-friendly `pretty` format.
 npm run dev -- triage path/to/paper.pdf --compact
 ```
 
+### Force regeneration
+
+By default, `triage` and `deconstruct` reuse cached structured results when the paper text, command, model, and prompt version match.
+
+```bash
+npm run dev -- triage path/to/paper.pdf --force
+npm run dev -- deconstruct path/to/paper.pdf --force
+```
+
 ### Markdown
 
 ```bash
@@ -112,5 +122,6 @@ npm run build
 ## Notes
 
 - This is intentionally minimal. It does not yet do figure extraction, section-aware parsing, batch processing, personalization, or adversarial review.
+- Cached results are stored in `.paper-deconstructor-cache/` and are keyed by command, model, prompt version, and extracted paper text.
 - For long PDFs, the CLI trims the paper text to fit a practical context window by keeping more of the front of the paper and some of the end.
 - You can point the CLI at another OpenAI-compatible provider with `OPENAI_BASE_URL`.
