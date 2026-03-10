@@ -14,6 +14,7 @@ A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described
 - optional Markdown and JSON output modes
 - spinner feedback while reading and analyzing in interactive terminals
 - local caching for triage and deconstruction results
+- triage runs as a multi-step prompt chain with an explicit quality-check pass
 - OpenAI-compatible LLM backend via environment variables
 
 ## Simple stack

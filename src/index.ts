@@ -9,11 +9,11 @@ import { extractPaperText } from "./pdf.js";
 import {
   buildAskPrompt,
   buildDeconstructionPrompt,
-  buildTriagePrompt,
   DECONSTRUCTION_PROMPT_VERSION,
-  TRIAGE_PROMPT_VERSION,
+  TRIAGE_CHAIN_VERSION,
 } from "./prompts.js";
 import { Spinner } from "./spinner.js";
+import { runTriageChain } from "./triage.js";
 import { AskResult, DeconstructionResult, TriageResult } from "./types.js";
 
 interface ParsedArgs {
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
       result = await readCachedResult<TriageResult>({
         command: "triage",
         model: config.model,
-        promptVersion: TRIAGE_PROMPT_VERSION,
+        promptVersion: TRIAGE_CHAIN_VERSION,
         paperText: paper.text,
       });
     }
@@ -174,15 +174,14 @@ async function main(): Promise<void> {
     if (result) {
       spinner.stop("Loaded cached triage.");
     } else {
-      spinner.update(args.force ? "Regenerating triage..." : cacheEnabled ? "Triaging..." : "Triaging without cache...");
-      const prompt = buildTriagePrompt(paper.fileName, paper.text);
-      result = await generateStructuredOutput<TriageResult>(prompt);
+      spinner.update(args.force ? "Regenerating triage..." : cacheEnabled ? "Running triage chain..." : "Running triage chain without cache...");
+      result = await runTriageChain(paper.fileName, paper.text, spinner);
       if (cacheEnabled) {
         await writeCachedResult(
           {
             command: "triage",
             model: config.model,
-            promptVersion: TRIAGE_PROMPT_VERSION,
+            promptVersion: TRIAGE_CHAIN_VERSION,
             paperText: paper.text,
           },
           result,

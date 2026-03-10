@@ -33,6 +33,47 @@ export interface TriageResult {
   };
 }
 
+export interface TriageExtraction {
+  title: string;
+  coreClaims: Array<{
+    claim: string;
+    claimType: "headline" | "supporting" | "method" | "negative-result" | "framing";
+    supportingPassage: string;
+  }>;
+  evidenceItems: Array<{
+    evidence: string;
+    evidenceType: "empirical" | "theoretical" | "benchmark" | "ablation" | "analysis" | "mixed";
+    supportingPassage: string;
+    relatedClaims: string[];
+  }>;
+  contributionSignals: {
+    candidateTypes: ContributionType[];
+    rationale: string;
+  };
+  mechanismSignals: {
+    biasOrMethod: string;
+    dataOrStructure: string;
+    claimedEffect: string;
+    whyAuthorsExpectIt: string;
+  };
+}
+
+export interface TriageQualityGate {
+  verdict: "pass" | "revise";
+  checks: {
+    grounded: boolean;
+    contributionTypeConsistent: boolean;
+    strongestEvidenceSupported: boolean;
+    weakestLinkSupported: boolean;
+    recommendationCalibrated: boolean;
+    tooFlattering: boolean;
+    tooCynical: boolean;
+    inventedClaims: boolean;
+  };
+  issues: string[];
+  revisedTriage?: TriageResult;
+}
+
 export interface DecoderRewrite {
   original: string;
   plainEnglish: string;
