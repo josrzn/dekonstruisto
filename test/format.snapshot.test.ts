@@ -159,6 +159,10 @@ describe("format snapshots", () => {
     expect(renderTriage(triage, { format: "pretty", color: false, width: 80 })).toMatchSnapshot();
   });
 
+  it("matches triage compact snapshot", () => {
+    expect(renderTriage(triage, { format: "pretty", color: false, width: 80, compact: true })).toMatchSnapshot();
+  });
+
   it("matches triage markdown snapshot", () => {
     expect(renderTriage(triage, { format: "markdown" })).toMatchSnapshot();
   });
@@ -167,8 +171,16 @@ describe("format snapshots", () => {
     expect(renderTriageDebug(triageDebug, { format: "pretty", color: false, width: 88 })).toMatchSnapshot();
   });
 
+  it("matches triage debug compact snapshot", () => {
+    expect(renderTriageDebug(triageDebug, { format: "pretty", color: false, width: 88, compact: true })).toMatchSnapshot();
+  });
+
   it("matches deconstruction pretty snapshot", () => {
     expect(renderDeconstruction(deconstruction, { format: "pretty", color: false, width: 88 })).toMatchSnapshot();
+  });
+
+  it("matches deconstruction compact snapshot", () => {
+    expect(renderDeconstruction(deconstruction, { format: "pretty", color: false, width: 88, compact: true })).toMatchSnapshot();
   });
 
   it("matches deconstruction markdown snapshot", () => {
@@ -177,5 +189,9 @@ describe("format snapshots", () => {
 
   it("matches deconstruction debug pretty snapshot", () => {
     expect(renderDeconstructionDebug(deconstructionDebug, { format: "pretty", color: false, width: 88 })).toMatchSnapshot();
+  });
+
+  it("matches deconstruction debug compact snapshot", () => {
+    expect(renderDeconstructionDebug(deconstructionDebug, { format: "pretty", color: false, width: 88, compact: true })).toMatchSnapshot();
   });
 });

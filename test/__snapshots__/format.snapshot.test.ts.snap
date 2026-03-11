@@ -1,5 +1,54 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`format snapshots > matches deconstruction compact snapshot 1`] = `
+"Example Paper
+═════════════
+Architecture: Because sparse methods prefer simple repeated signals, they may isolate
+cues before true reasoning structure.
+Rewrites
+────────────────────────
+Rewrite 1: Candidate reasoning features preferentially respond to low-dimensional
+correlates.
+Plain English: The features mostly react to simple clues.
+Meaning: Low-dimensional correlates means simple repeated signals.
+Claim-Evidence Map
+────────────────────────
+Claim 1: Reasoning features detect cues.
+Evidence: Cue token injection activates many candidate features.
+Type: empirical; Strength: moderate
+Alt: Cue tokens may recreate broader context."
+`;
+
+exports[`format snapshots > matches deconstruction debug compact snapshot 1`] = `
+"Debug: Deconstruction Chain
+────────────────────────────────────
+Template type: measurement paper
+Setup: Tests whether features track reasoning.
+Method property: Sparse methods isolate simple signals.
+Data structure: Cue tokens are easier to isolate than reasoning traces.
+Claimed implication: Apparent reasoning features may be cue detectors.
+Architecture passage 1: We test whether candidate reasoning features respond to cue
+tokens.
+Decoder: 1. [abstract] Candidate reasoning features preferentially respond to
+low-dimensional correlates. | Why it matters: It states the paper's main mechanistic
+interpretation. | Plain English: The features mostly react to simple clues.
+Claim map: 1. Claim: Reasoning features detect cues. | Evidence type: empirical |
+Strength: moderate | Alt: Cue tokens may recreate broader context. | Passage: Injecting
+cue tokens activates many candidate features.
+Quality gate verdict: pass
+Check: architectureGrounded: yes
+Check: architectureMatchesClaims: yes
+Check: decoderSelectionsCentral: yes
+Check: decoderRewritesFaithful: yes
+Check: claimMapGrounded: yes
+Check: strengthLabelsCalibrated: yes
+Check: alternativeExplanationsSpecific: yes
+Check: inventedContent: no
+Check: tooFlattering: no
+Check: tooCynical: no
+Final revised by gate: no"
+`;
+
 exports[`format snapshots > matches deconstruction debug pretty snapshot 1`] = `
 "Debug: Deconstruction Chain
 ─────────────────────────────────
@@ -114,6 +163,43 @@ Claim-Evidence Map
 │ Strength: moderate                                                                   │
 │ Alternative Explanation: Cue tokens may recreate broader context.                    │
 └──────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`format snapshots > matches triage compact snapshot 1`] = `
+"Example Paper
+═════════════
+Thesis: The paper argues that cue tokens explain most of the observed effect.
+Type: negative result/falsification, new method
+Mechanism: Bias/Method=Sparse methods prefer simple repeated signals.;
+Data/Structure=Cue tokens are easier to isolate than distributed reasoning
+traces.; Claimed Effect=Candidate reasoning features fire on cues instead of
+reasoning.; Why=Simple repeated signals are easier to capture than messy latent
+structure.
+Strongest evidence: Cue injection recreates many reported feature activations.
+Passage: Injecting cue tokens activates many candidate features.
+Weakest link: Only small models are evaluated.
+Passage: We only evaluate small models.
+Recommendation: READ NOW — Worth reading if you work on interpretability."
+`;
+
+exports[`format snapshots > matches triage debug compact snapshot 1`] = `
+"Debug: Triage Chain
+────────────────────────────────
+Contribution signal candidates: new method
+Contribution rationale: Introduces a new evaluation protocol.
+Claim: 1. [headline] Main claim | Passage: We show the main claim.
+Evidence: 1. [empirical] Main experiment | Related claims: Main claim | Passage: Table 1
+shows...
+Quality gate verdict: pass
+Check: grounded: yes
+Check: contributionTypeConsistent: yes
+Check: strongestEvidenceSupported: yes
+Check: weakestLinkSupported: yes
+Check: recommendationCalibrated: yes
+Check: tooFlattering: no
+Check: tooCynical: no
+Check: inventedClaims: no
+Final revised by gate: no"
 `;
 
 exports[`format snapshots > matches triage debug pretty snapshot 1`] = `
