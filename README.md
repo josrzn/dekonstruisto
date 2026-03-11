@@ -145,7 +145,8 @@ npm run build
 
 ## Notes
 
-- This is intentionally minimal. It does not yet do figure extraction, section-aware parsing, batch processing, personalization, or adversarial review.
+- This is intentionally minimal. It does not yet do figure extraction, batch processing, personalization, or adversarial review.
+- The PDF/text ingestion now does basic section-aware extraction so prompts can prioritize title, abstract, introduction, conclusion, and the main body while ignoring references when detected.
 - Cached results are stored in `.paper-deconstructor-cache/` and are keyed by command, model, prompt version, and extracted paper text.
-- For long PDFs, the CLI trims the paper text to fit a practical context window by keeping more of the front of the paper and some of the end.
+- For long PDFs, the CLI trims the structured paper context to fit a practical context window.
 - You can point the CLI at another OpenAI-compatible provider with `OPENAI_BASE_URL`.
