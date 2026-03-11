@@ -12,6 +12,8 @@ export const TRIAGE_SYNTHESIS_PROMPT_VERSION = "v1";
 export const TRIAGE_QUALITY_GATE_PROMPT_VERSION = "v1";
 export const TRIAGE_CHAIN_VERSION = `chain-${TRIAGE_EXTRACTION_PROMPT_VERSION}-${TRIAGE_SYNTHESIS_PROMPT_VERSION}-${TRIAGE_QUALITY_GATE_PROMPT_VERSION}`;
 
+export const SECTION_NORMALIZATION_PROMPT_VERSION = "v1";
+
 export const DECONSTRUCTION_ARCHITECTURE_PROMPT_VERSION = "v1";
 export const DECONSTRUCTION_DECODER_PROMPT_VERSION = "v1";
 export const DECONSTRUCTION_CLAIM_MAP_PROMPT_VERSION = "v1";
@@ -233,6 +235,49 @@ ${JSON.stringify(synthesis, null, 2)}
 Paper text:
 """
 ${paperText}
+"""`;
+}
+
+export function buildSectionNormalizationPrompt(
+  fileName: string,
+  rawText: string,
+  heuristicSections: {
+    title: string | null;
+    abstract: string | null;
+    introduction: string | null;
+    conclusion: string | null;
+    body: string;
+  },
+): string {
+  return `Normalize the document structure of the following academic paper extraction.
+
+File: ${fileName}
+
+You are in document-structure normalization mode.
+- Your task is to identify title, abstract, introduction, conclusion, and main body from noisy extracted text.
+- Use the raw extracted text as the source of truth.
+- Use the heuristic section guess as a hint, not as authority.
+- Do not analyze the paper's arguments.
+- Do not invent missing sections. If uncertain, return null for optional sections.
+- Remove references/bibliography material from the body when clearly detectable.
+
+Return JSON with exactly this shape:
+{
+  "title": string | null,
+  "abstract": string | null,
+  "introduction": string | null,
+  "conclusion": string | null,
+  "body": string,
+  "referencesDetected": boolean,
+  "notes": string[]
+}
+
+Heuristic section guess:
+${JSON.stringify(heuristicSections, null, 2)}
+
+Raw extracted text:
+"""
+${rawText}
 """`;
 }
 

@@ -12,6 +12,7 @@ export interface PaperSections {
 
 export interface ExtractedPaper {
   fileName: string;
+  rawText: string;
   text: string;
   sections: PaperSections;
 }
@@ -169,6 +170,10 @@ export function buildPaperContext(sections: PaperSections, maxChars: number): st
   return trimContext(parts.join("\n\n"), maxChars);
 }
 
+export function trimPaperContext(text: string, maxChars: number): string {
+  return trimContext(text, maxChars);
+}
+
 export async function extractPaperText(filePath: string, maxChars: number): Promise<ExtractedPaper> {
   const absolutePath = path.resolve(filePath);
   const fileName = path.basename(absolutePath);
@@ -197,6 +202,7 @@ export async function extractPaperText(filePath: string, maxChars: number): Prom
 
   return {
     fileName,
+    rawText: normalized,
     text: buildPaperContext(sections, maxChars),
     sections,
   };

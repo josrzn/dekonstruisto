@@ -6,8 +6,9 @@ import { getConfig } from "./config.js";
 import { runDeconstructionChain } from "./deconstruct.js";
 import { OutputFormat, renderAsk, renderDeconstruction, renderDeconstructionDebug, renderTriage, renderTriageDebug } from "./format.js";
 import { generateStructuredOutput } from "./llm.js";
-import { extractPaperText } from "./pdf.js";
+import { buildPaperContext, extractPaperText } from "./pdf.js";
 import { buildAskPrompt, DECONSTRUCTION_CHAIN_VERSION, TRIAGE_CHAIN_VERSION } from "./prompts.js";
+import { normalizePaperSectionsWithModel, SECTION_NORMALIZATION_PROMPT_VERSION } from "./section-normalizer.js";
 import { Spinner } from "./spinner.js";
 import { runTriageChain } from "./triage.js";
 import { AskResult, DeconstructionChainArtifacts, DeconstructionResult, TriageChainArtifacts, TriageResult } from "./types.js";
@@ -23,6 +24,7 @@ interface ParsedArgs {
   force?: boolean;
   noCache?: boolean;
   debug?: boolean;
+  modelSections?: boolean;
 }
 
 let activeSpinner: Spinner | undefined;
@@ -39,10 +41,11 @@ Shortcuts:
   --markdown    same as --format markdown
   --json        same as --format json
   --compact     denser pretty output for terminal scanning
-  --debug       show triage/deconstruct chain artifacts and quality-gate internals
-  --force       bypass cached triage/deconstruction and regenerate
-  --no-cache    do not read from or write to cache
-  --no-color    disable ANSI colors in pretty output
+  --debug          show triage/deconstruct chain artifacts and quality-gate internals
+  --model-sections use a model-assisted section normalization pass before analysis
+  --force          bypass cached triage/deconstruction and regenerate
+  --no-cache       do not read from or write to cache
+  --no-color       disable ANSI colors in pretty output
 
 Interactive UX:
   pretty mode uses richer box-drawing styling
@@ -53,9 +56,11 @@ Defaults:
   if --out ends with .md or .json, that format is inferred unless overridden
 
 Environment:
-  OPENAI_API_KEY                Required
-  PAPER_DECONSTRUCTOR_MODEL     Optional, defaults to gpt-4.1-mini
-  OPENAI_BASE_URL               Optional, for OpenAI-compatible providers
+  OPENAI_API_KEY                   Required
+  PAPER_DECONSTRUCTOR_MODEL        Optional, defaults to gpt-4.1-mini
+  PAPER_DECONSTRUCTOR_MODEL_SECTIONS Optional, enable model-assisted section normalization by default
+  PAPER_DECONSTRUCTOR_SECTION_MODEL Optional, model for section normalization
+  OPENAI_BASE_URL                  Optional, for OpenAI-compatible providers
 `);
 }
 
@@ -93,6 +98,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       parsed.noCache = true;
     } else if (token === "--debug") {
       parsed.debug = true;
+    } else if (token === "--model-sections") {
+      parsed.modelSections = true;
     }
   }
 
@@ -154,9 +161,55 @@ async function main(): Promise<void> {
   const spinner = new Spinner(process.stdout.isTTY && process.stderr.isTTY);
   activeSpinner = spinner;
   const cacheEnabled = !args.noCache;
+  const useModelSections = args.modelSections ?? config.modelSections;
 
   spinner.start("Reading paper...");
-  const paper = await extractPaperText(args.filePath, config.maxContextChars);
+  let paper = await extractPaperText(args.filePath, config.maxContextChars);
+
+  if (useModelSections) {
+    let normalizedSections = null;
+
+    if (cacheEnabled && !args.force) {
+      spinner.update("Checking section normalization cache...");
+      normalizedSections = await readCachedResult<typeof paper.sections>({
+        command: "structure",
+        model: config.sectionModel,
+        promptVersion: SECTION_NORMALIZATION_PROMPT_VERSION,
+        paperText: paper.rawText,
+      });
+    }
+
+    if (!normalizedSections) {
+      normalizedSections = await normalizePaperSectionsWithModel(
+        paper.fileName,
+        paper.rawText,
+        paper.sections,
+        config.sectionModel,
+        config.maxContextChars,
+        spinner,
+      );
+
+      if (cacheEnabled) {
+        await writeCachedResult(
+          {
+            command: "structure",
+            model: config.sectionModel,
+            promptVersion: SECTION_NORMALIZATION_PROMPT_VERSION,
+            paperText: paper.rawText,
+          },
+          normalizedSections,
+        );
+      }
+    } else {
+      spinner.update("Using cached normalized paper structure...");
+    }
+
+    paper = {
+      ...paper,
+      sections: normalizedSections,
+      text: buildPaperContext(normalizedSections, config.maxContextChars),
+    };
+  }
 
   if (args.command === "triage") {
     let result: TriageResult | null = null;
