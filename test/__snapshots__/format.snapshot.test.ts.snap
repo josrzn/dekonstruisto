@@ -1,0 +1,236 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`format snapshots > matches deconstruction debug pretty snapshot 1`] = `
+"Debug: Deconstruction Chain
+─────────────────────────────────
+
+┌─ Argument Architecture Extraction ───────────────────────────────────────────────────┐
+│ Template Type: measurement paper                                                     │
+│ Setup: Tests whether features track reasoning.                                       │
+│ Method Property: Sparse methods isolate simple signals.                              │
+│ Data Structure: Cue tokens are easier to isolate than reasoning traces.              │
+│ Claimed Implication: Apparent reasoning features may be cue detectors.               │
+│ Plain Language Architecture: Because sparse methods prefer simple repeated signals,  │
+│ they may isolate cues before true reasoning structure.                               │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Architecture Supporting Passages ───────────────────────────────────────────────────┐
+│ • We test whether candidate reasoning features respond to cue tokens.                │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Decoder Selections ─────────────────────────────────────────────────────────────────┐
+│ • 1. [abstract] Candidate reasoning features preferentially respond to               │
+│   low-dimensional correlates. | Why it matters: It states the paper's main           │
+│   mechanistic interpretation. | Plain English: The features mostly react to simple   │
+│   clues.                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Claim-Evidence Extraction ──────────────────────────────────────────────────────────┐
+│ • 1. Claim: Reasoning features detect cues. | Evidence type: empirical | Strength:   │
+│   moderate | Alt: Cue tokens may recreate broader context. | Passage: Injecting cue  │
+│   tokens activates many candidate features.                                          │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Pre-Gate Assembly ──────────────────────────────────────────────────────────────────┐
+│ Argument Architecture: Because sparse methods prefer simple repeated signals, they   │
+│ may isolate cues before true reasoning structure.                                    │
+│ Decoder Rewrite Count: 1                                                             │
+│ Claim-Evidence Item Count: 1                                                         │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Quality Gate ───────────────────────────────────────────────────────────────────────┐
+│ Verdict: pass                                                                        │
+│ architectureGrounded: yes                                                            │
+│ architectureMatchesClaims: yes                                                       │
+│ decoderSelectionsCentral: yes                                                        │
+│ decoderRewritesFaithful: yes                                                         │
+│ claimMapGrounded: yes                                                                │
+│ strengthLabelsCalibrated: yes                                                        │
+│ alternativeExplanationsSpecific: yes                                                 │
+│ inventedContent: no                                                                  │
+│ tooFlattering: no                                                                    │
+│ tooCynical: no                                                                       │
+│ Revised Final Result: no                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Quality Gate Issues ────────────────────────────────────────────────────────────────┐
+│ • none                                                                               │
+└──────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`format snapshots > matches deconstruction markdown snapshot 1`] = `
+"# Example Paper
+
+## Argument Architecture
+Because sparse methods prefer simple repeated signals, they may isolate cues before true reasoning structure.
+
+## Paper Decoder Rewrites
+### Rewrite 1
+**Original**  
+Candidate reasoning features preferentially respond to low-dimensional correlates.
+
+**Plain English**  
+The features mostly react to simple clues.
+
+**What it really means**  
+Low-dimensional correlates means simple repeated signals.
+
+## Claim-Evidence Map
+### Claim 1
+- **Claim:** Reasoning features detect cues.
+- **Evidence:** Cue token injection activates many candidate features.
+- **Evidence Type:** empirical
+- **Strength:** moderate
+- **Alternative Explanation:** Cue tokens may recreate broader context.
+"
+`;
+
+exports[`format snapshots > matches deconstruction pretty snapshot 1`] = `
+"Example Paper
+═════════════
+
+┌─ Argument Architecture ──────────────────────────────────────────────────────────────┐
+│ Because sparse methods prefer simple repeated signals, they may isolate cues before  │
+│ true reasoning structure.                                                            │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+Paper Decoder Rewrites
+────────────────────────────
+
+┌─ Rewrite 1 ──────────────────────────────────────────────────────────────────────────┐
+│ Original: Candidate reasoning features preferentially respond to low-dimensional     │
+│ correlates.                                                                          │
+│ Plain English: The features mostly react to simple clues.                            │
+│ What it really means: Low-dimensional correlates means simple repeated signals.      │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+Claim-Evidence Map
+────────────────────────
+
+┌─ Claim 1 ────────────────────────────────────────────────────────────────────────────┐
+│ Claim: Reasoning features detect cues.                                               │
+│ Evidence: Cue token injection activates many candidate features.                     │
+│ Evidence Type: empirical                                                             │
+│ Strength: moderate                                                                   │
+│ Alternative Explanation: Cue tokens may recreate broader context.                    │
+└──────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`format snapshots > matches triage debug pretty snapshot 1`] = `
+"Debug: Triage Chain
+─────────────────────────
+
+┌─ Extraction Signals ─────────────────────────────────────────────────────────────────┐
+│ Candidate Contribution Types: new method                                             │
+│ Contribution Rationale: Introduces a new evaluation protocol.                        │
+│ Mechanism Bias / Method: Sparse method bias                                          │
+│ Mechanism Data / Structure: Simple cues                                              │
+│ Mechanism Claimed Effect: Features fire on cues                                      │
+│ Mechanism Why: Simple signals are easier to isolate                                  │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Extracted Core Claims ──────────────────────────────────────────────────────────────┐
+│ • 1. [headline] Main claim | Passage: We show the main claim.                        │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Extracted Evidence Items ───────────────────────────────────────────────────────────┐
+│ • 1. [empirical] Main experiment | Related claims: Main claim | Passage: Table 1     │
+│   shows...                                                                           │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Pre-Gate Synthesis ─────────────────────────────────────────────────────────────────┐
+│ One-Line Thesis: The paper argues that cue tokens explain most of the observed       │
+│ effect.                                                                              │
+│ Contribution Type: negative result/falsification, new method                         │
+│ Recommendation: Read Now — Worth reading if you work on interpretability.            │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Quality Gate ───────────────────────────────────────────────────────────────────────┐
+│ Verdict: pass                                                                        │
+│ grounded: yes                                                                        │
+│ contributionTypeConsistent: yes                                                      │
+│ strongestEvidenceSupported: yes                                                      │
+│ weakestLinkSupported: yes                                                            │
+│ recommendationCalibrated: yes                                                        │
+│ tooFlattering: no                                                                    │
+│ tooCynical: no                                                                       │
+│ inventedClaims: no                                                                   │
+│ Revised Final Result: no                                                             │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Quality Gate Issues ────────────────────────────────────────────────────────────────┐
+│ • none                                                                               │
+└──────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`format snapshots > matches triage markdown snapshot 1`] = `
+"# Example Paper
+
+## Triage Card
+
+**One-Line Thesis**  
+The paper argues that cue tokens explain most of the observed effect.
+
+**Contribution Type**  
+negative result/falsification, new method
+
+**Mechanism Decomposition**
+- **Bias / Method:** Sparse methods prefer simple repeated signals.
+- **Data / Structure:** Cue tokens are easier to isolate than distributed reasoning traces.
+- **Claimed Effect:** Candidate reasoning features fire on cues instead of reasoning.
+- **Why Authors Expect It:** Simple repeated signals are easier to capture than messy latent structure.
+
+**Strongest Evidence**  
+Cue injection recreates many reported feature activations.
+
+> Injecting cue tokens activates many candidate features.
+
+**Weakest Link**  
+Only small models are evaluated.
+
+> We only evaluate small models.
+
+**Investment Recommendation**  
+**Read Now** — Worth reading if you work on interpretability.
+"
+`;
+
+exports[`format snapshots > matches triage pretty snapshot 1`] = `
+"Example Paper
+═════════════
+
+┌─ Triage Card ────────────────────────────────────────────────────────────────┐
+│ Thesis: The paper argues that cue tokens explain most of the observed        │
+│         effect.                                                              │
+│                                                                              │
+│ Type: negative result/falsification, new method                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Mechanism Decomposition ────────────────────────────────────────────────────┐
+│ Bias / Method: Sparse methods prefer simple repeated signals.                │
+│ Data / Structure: Cue tokens are easier to isolate than distributed          │
+│ reasoning traces.                                                            │
+│ Claimed Effect: Candidate reasoning features fire on cues instead of         │
+│ reasoning.                                                                   │
+│ Why Authors Expect It: Simple repeated signals are easier to capture than    │
+│ messy latent structure.                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Strongest Evidence ─────────────────────────────────────────────────────────┐
+│ Cue injection recreates many reported feature activations.                   │
+│                                                                              │
+│ Passage: Injecting cue tokens activates many candidate features.             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Weakest Link ───────────────────────────────────────────────────────────────┐
+│ Only small models are evaluated.                                             │
+│                                                                              │
+│ Passage: We only evaluate small models.                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Recommendation ─────────────────────────────────────────────────────────────┐
+│ READ NOW                                                                     │
+│                                                                              │
+│ Worth reading if you work on interpretability.                               │
+└──────────────────────────────────────────────────────────────────────────────┘"
+`;
