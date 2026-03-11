@@ -42,6 +42,14 @@ OPENAI_API_KEY=...
 PAPER_DECONSTRUCTOR_MODEL=gpt-4.1-mini
 ```
 
+Temperature defaults are model-aware:
+- `gpt-5*` models default to `1`
+- other models default to `0.2`
+
+You can override them explicitly with:
+- `PAPER_DECONSTRUCTOR_TEMPERATURE`
+- `PAPER_DECONSTRUCTOR_SECTION_TEMPERATURE`
+
 ## Usage
 
 ### Triage

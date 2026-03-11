@@ -37,6 +37,7 @@ export async function normalizePaperSectionsWithModel(
   rawText: string,
   heuristicSections: PaperSections,
   sectionModel: string,
+  sectionTemperature: number,
   maxChars: number,
   spinner?: Spinner,
 ): Promise<NormalizedSectionResult> {
@@ -47,7 +48,10 @@ export async function normalizePaperSectionsWithModel(
     heuristicSections,
   );
 
-  const normalized = await generateStructuredOutput<NormalizedSectionResult>(prompt, { model: sectionModel });
+  const normalized = await generateStructuredOutput<NormalizedSectionResult>(prompt, {
+    model: sectionModel,
+    temperature: sectionTemperature,
+  });
 
   return {
     title: cleanOptionalText(normalized.title),

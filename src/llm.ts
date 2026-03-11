@@ -73,7 +73,10 @@ export function parseStructuredJson<T>(text: string): T {
   throw new Error("Model returned invalid JSON.");
 }
 
-export async function generateStructuredOutput<T>(userPrompt: string, options?: { model?: string }): Promise<T> {
+export async function generateStructuredOutput<T>(
+  userPrompt: string,
+  options?: { model?: string; temperature?: number },
+): Promise<T> {
   const config = getConfig();
   const client = new OpenAI({
     apiKey: config.apiKey,
@@ -82,7 +85,7 @@ export async function generateStructuredOutput<T>(userPrompt: string, options?: 
 
   const completion = await client.chat.completions.create({
     model: options?.model || config.model,
-    temperature: 0.2,
+    temperature: options?.temperature ?? config.temperature,
     messages: [
       {
         role: "system",

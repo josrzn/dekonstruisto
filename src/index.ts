@@ -56,11 +56,13 @@ Defaults:
   if --out ends with .md or .json, that format is inferred unless overridden
 
 Environment:
-  OPENAI_API_KEY                   Required
-  PAPER_DECONSTRUCTOR_MODEL        Optional, defaults to gpt-4.1-mini
-  PAPER_DECONSTRUCTOR_MODEL_SECTIONS Optional, enable model-assisted section normalization by default
-  PAPER_DECONSTRUCTOR_SECTION_MODEL Optional, model for section normalization
-  OPENAI_BASE_URL                  Optional, for OpenAI-compatible providers
+  OPENAI_API_KEY                      Required
+  PAPER_DECONSTRUCTOR_MODEL           Optional, defaults to gpt-4.1-mini
+  PAPER_DECONSTRUCTOR_TEMPERATURE     Optional, defaults to 1 for gpt-5* and 0.2 otherwise
+  PAPER_DECONSTRUCTOR_MODEL_SECTIONS  Optional, enable model-assisted section normalization by default
+  PAPER_DECONSTRUCTOR_SECTION_MODEL   Optional, model for section normalization
+  PAPER_DECONSTRUCTOR_SECTION_TEMPERATURE Optional, defaults to 1 for gpt-5* and 0.2 otherwise
+  OPENAI_BASE_URL                     Optional, for OpenAI-compatible providers
 `);
 }
 
@@ -185,6 +187,7 @@ async function main(): Promise<void> {
         paper.rawText,
         paper.sections,
         config.sectionModel,
+        config.sectionTemperature,
         config.maxContextChars,
         spinner,
       );
