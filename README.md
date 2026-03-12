@@ -1,6 +1,6 @@
-# Paper Deconstructor CLI
+# Dekonstruisto
 
-Paper Deconstructor CLI is a TypeScript command-line tool for skeptical first-pass reading of academic papers.
+Dekonstruisto is a TypeScript command-line tool for skeptical first-pass reading of academic papers.
 
 Instead of producing a generic summary, it tries to answer questions like:
 - what is the paper really claiming?
@@ -51,7 +51,7 @@ Set at least:
 
 ```bash
 OPENAI_API_KEY=...
-PAPER_DECONSTRUCTOR_MODEL=gpt-4.1-mini
+DEKONSTRUISTO_MODEL=gpt-4.1-mini
 ```
 
 Temperature defaults are model-aware:
@@ -59,8 +59,8 @@ Temperature defaults are model-aware:
 - other models default to `0.2`
 
 You can override them explicitly with:
-- `PAPER_DECONSTRUCTOR_TEMPERATURE`
-- `PAPER_DECONSTRUCTOR_SECTION_TEMPERATURE`
+- `DEKONSTRUISTO_TEMPERATURE`
+- `DEKONSTRUISTO_SECTION_TEMPERATURE`
 
 ## Usage
 
@@ -107,8 +107,8 @@ This runs a cached model pass that normalizes title/abstract/introduction/conclu
 You can also enable it by default in `.env`:
 
 ```bash
-PAPER_DECONSTRUCTOR_MODEL_SECTIONS=true
-PAPER_DECONSTRUCTOR_SECTION_MODEL=gpt-4.1-mini
+DEKONSTRUISTO_MODEL_SECTIONS=true
+DEKONSTRUISTO_SECTION_MODEL=gpt-4.1-mini
 ```
 
 ### Debug chain artifacts
@@ -183,6 +183,6 @@ npm run build
 
 - This is intentionally minimal. It does not yet do figure extraction, batch processing, personalization, or adversarial review.
 - The PDF/text ingestion now does basic heuristic section-aware extraction, and can optionally run a cached model-assisted normalization pass on top of that.
-- Cached results are stored in `.paper-deconstructor-cache/` and are keyed by command, model, prompt version, and extracted paper text.
+- Cached results are stored in `.dekonstruisto-cache/` and are keyed by command, model, prompt version, and extracted paper text.
 - For long PDFs, the CLI trims the structured paper context to fit a practical context window.
 - You can point the CLI at another OpenAI-compatible provider with `OPENAI_BASE_URL`.

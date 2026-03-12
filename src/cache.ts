@@ -24,7 +24,7 @@ interface CacheEnvelope<T> {
 const CACHE_VERSION = "v1";
 
 function getCacheDir(): string {
-  return path.resolve(process.env.PAPER_DECONSTRUCTOR_CACHE_DIR || ".paper-deconstructor-cache");
+  return path.resolve(process.env.DEKONSTRUISTO_CACHE_DIR || ".dekonstruisto-cache");
 }
 
 function sha256(value: string): string {

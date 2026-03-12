@@ -37,15 +37,12 @@ export function getConfig(): AppConfig {
     throw new Error("Missing OPENAI_API_KEY. Copy .env.example to .env and set your API key.");
   }
 
-  const model = process.env.PAPER_DECONSTRUCTOR_MODEL || "gpt-4.1-mini";
-  const modelSections = /^(1|true|yes)$/i.test(process.env.PAPER_DECONSTRUCTOR_MODEL_SECTIONS || "false");
-  const sectionModel = process.env.PAPER_DECONSTRUCTOR_SECTION_MODEL || model;
-  const temperature = parseTemperature(
-    process.env.PAPER_DECONSTRUCTOR_TEMPERATURE,
-    defaultTemperatureForModel(model),
-  );
+  const model = process.env.DEKONSTRUISTO_MODEL || "gpt-4.1-mini";
+  const modelSections = /^(1|true|yes)$/i.test(process.env.DEKONSTRUISTO_MODEL_SECTIONS || "false");
+  const sectionModel = process.env.DEKONSTRUISTO_SECTION_MODEL || model;
+  const temperature = parseTemperature(process.env.DEKONSTRUISTO_TEMPERATURE, defaultTemperatureForModel(model));
   const sectionTemperature = parseTemperature(
-    process.env.PAPER_DECONSTRUCTOR_SECTION_TEMPERATURE,
+    process.env.DEKONSTRUISTO_SECTION_TEMPERATURE,
     defaultTemperatureForModel(sectionModel),
   );
 
@@ -57,6 +54,6 @@ export function getConfig(): AppConfig {
     modelSections,
     temperature,
     sectionTemperature,
-    maxContextChars: Number(process.env.PAPER_DECONSTRUCTOR_MAX_CONTEXT_CHARS || 60000),
+    maxContextChars: Number(process.env.DEKONSTRUISTO_MAX_CONTEXT_CHARS || 60000),
   };
 }

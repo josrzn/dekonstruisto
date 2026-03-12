@@ -6,18 +6,18 @@ import { readCachedResult, writeCachedResult } from "../src/cache.js";
 
 describe("cache", () => {
   let tempDir: string;
-  const previousCacheDir = process.env.PAPER_DECONSTRUCTOR_CACHE_DIR;
+  const previousCacheDir = process.env.DEKONSTRUISTO_CACHE_DIR;
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "paper-deconstructor-cache-"));
-    process.env.PAPER_DECONSTRUCTOR_CACHE_DIR = tempDir;
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "dekonstruisto-cache-"));
+    process.env.DEKONSTRUISTO_CACHE_DIR = tempDir;
   });
 
   afterEach(async () => {
     if (previousCacheDir === undefined) {
-      delete process.env.PAPER_DECONSTRUCTOR_CACHE_DIR;
+      delete process.env.DEKONSTRUISTO_CACHE_DIR;
     } else {
-      process.env.PAPER_DECONSTRUCTOR_CACHE_DIR = previousCacheDir;
+      process.env.DEKONSTRUISTO_CACHE_DIR = previousCacheDir;
     }
 
     await fs.rm(tempDir, { recursive: true, force: true });

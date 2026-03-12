@@ -3,5 +3,5 @@ dist
 .env
 .DS_Store
 output
-.paper-deconstructor-cache
+.dekonstruisto-cache
 docs/

@@ -29,7 +29,7 @@ describe("CLI integration", () => {
     const result = await runCli(["help"]);
 
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain("Paper Deconstructor CLI");
+    expect(result.stdout).toContain("Dekonstruisto");
     expect(result.stdout).toContain("triage <paper.pdf>");
     expect(result.stdout).toContain("--debug");
   });

@@ -1,10 +1,10 @@
 {
-  "name": "paper-deconstructor-cli",
+  "name": "dekonstruisto",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "paper-deconstructor": "./dist/index.js"
+    "dekonstruisto": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
