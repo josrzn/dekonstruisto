@@ -4,3 +4,4 @@ dist
 .DS_Store
 output
 .paper-deconstructor-cache
+docs/

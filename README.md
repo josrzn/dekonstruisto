@@ -1,6 +1,18 @@
 # Paper Deconstructor CLI
 
-A minimal TypeScript CLI implementation of the Paper Deconstructor MVP described in `docs/Paper_Deconstructor_PRD.docx`.
+Paper Deconstructor CLI is a TypeScript command-line tool for skeptical first-pass reading of academic papers.
+
+Instead of producing a generic summary, it tries to answer questions like:
+- what is the paper really claiming?
+- what kind of contribution is this actually?
+- what is the strongest evidence?
+- what is the weakest link?
+- should this paper be read now, skimmed, or ignored unless directly relevant?
+
+The CLI currently supports three main workflows:
+- `triage`: a fast structured read for deciding whether a paper deserves more time
+- `deconstruct`: a deeper structural analysis of the paper's argument, key decoded sentences, and claim-evidence map
+- `ask`: follow-up questions grounded in the paper text and any cached prior analysis
 
 ## What this version includes
 
