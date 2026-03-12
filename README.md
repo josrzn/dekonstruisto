@@ -19,7 +19,7 @@ The CLI currently supports three main workflows:
 - `triage`: generates a Mode 1 Triage Card
 - `deconstruct`: generates a minimal Mode 2 Deconstruction Report
 - `ask`: asks a follow-up question against the paper text and reuses cached triage/deconstruction context when available
-- PDF, TXT, and Markdown input support
+- local file or URL input support for PDF, TXT, and Markdown resources
 - terminal-friendly pretty output by default
 - richer pretty-mode styling with Unicode box drawing
 - optional compact terminal mode for denser scanning
@@ -68,12 +68,14 @@ You can override them explicitly with:
 
 ```bash
 npm run dev -- triage path/to/paper.pdf
+npm run dev -- triage https://arxiv.org/pdf/2501.12345.pdf
 ```
 
 ### Deconstruct
 
 ```bash
 npm run dev -- deconstruct path/to/paper.pdf
+npm run dev -- deconstruct https://example.org/paper.pdf
 ```
 
 This now runs a multi-step deconstruction chain that separately extracts argument architecture, decoder rewrites, and claim-evidence structure before a final quality-check pass.
@@ -82,6 +84,7 @@ This now runs a multi-step deconstruction chain that separately extracts argumen
 
 ```bash
 npm run dev -- ask path/to/paper.pdf --question "What is the weakest link in the paper's argument?"
+npm run dev -- ask https://example.org/paper.pdf --question "What is actually novel here?"
 ```
 
 If cached `triage` and/or `deconstruct` results exist for the same paper and model, `ask` will reuse them as supplemental context while still grounding its answer in the paper text.
@@ -183,6 +186,8 @@ npm run build
 
 - This is intentionally minimal. It does not yet do figure extraction, batch processing, personalization, or adversarial review.
 - The PDF/text ingestion now does basic heuristic section-aware extraction, and can optionally run a cached model-assisted normalization pass on top of that.
+- Remote `http`/`https` resources can be used directly, but localhost and private-network URLs are rejected by default as a safety measure.
+- Remote downloads are limited in size and time to keep the CLI reasonably safe and responsive.
 - Cached results are stored in `.dekonstruisto-cache/` and are keyed by command, model, prompt version, and extracted paper text.
 - For long PDFs, the CLI trims the structured paper context to fit a practical context window.
 - You can point the CLI at another OpenAI-compatible provider with `OPENAI_BASE_URL`.

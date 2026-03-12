@@ -30,7 +30,7 @@ describe("CLI integration", () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("Dekonstruisto");
-    expect(result.stdout).toContain("triage <paper.pdf>");
+    expect(result.stdout).toContain("triage <paper.pdf|url>");
     expect(result.stdout).toContain("--debug");
   });
 

@@ -33,9 +33,9 @@ function printHelp(): void {
   console.log(`Dekonstruisto
 
 Usage:
-  npm run dev -- triage <paper.pdf> [--format pretty|markdown|json] [--out output.txt]
-  npm run dev -- deconstruct <paper.pdf> [--format pretty|markdown|json] [--out output.txt]
-  npm run dev -- ask <paper.pdf> --question "What is the weakest evidence?" [--format pretty|markdown|json] [--out output.txt]
+  npm run dev -- triage <paper.pdf|url> [--format pretty|markdown|json] [--out output.txt]
+  npm run dev -- deconstruct <paper.pdf|url> [--format pretty|markdown|json] [--out output.txt]
+  npm run dev -- ask <paper.pdf|url> --question "What is the weakest evidence?" [--format pretty|markdown|json] [--out output.txt]
 
 Shortcuts:
   --markdown    same as --format markdown
@@ -54,6 +54,11 @@ Interactive UX:
 Defaults:
   format defaults to pretty in the terminal
   if --out ends with .md or .json, that format is inferred unless overridden
+
+Input:
+  local .pdf, .txt, and .md files are supported
+  http/https URLs are supported for remote .pdf, .txt, and .md resources
+  localhost and private-network URLs are rejected by default
 
 Environment:
   OPENAI_API_KEY                    Required

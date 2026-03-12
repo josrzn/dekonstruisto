@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPaperContext, parsePaperSections } from "../src/pdf.js";
+import { buildPaperContext, isPrivateIpAddress, isRemoteHttpUrl, parsePaperSections } from "../src/pdf.js";
 
 describe("pdf section-aware extraction helpers", () => {
   const text = `Example Paper Title
@@ -44,5 +44,20 @@ References
     expect(context).toContain("Introduction");
     expect(context).toContain("Conclusion");
     expect(context).toContain("Main Body");
+  });
+
+  it("detects remote http urls", () => {
+    expect(isRemoteHttpUrl("https://example.com/paper.pdf")).toBe(true);
+    expect(isRemoteHttpUrl("http://example.com/paper.pdf")).toBe(true);
+    expect(isRemoteHttpUrl("ftp://example.com/paper.pdf")).toBe(false);
+    expect(isRemoteHttpUrl("./local-paper.pdf")).toBe(false);
+  });
+
+  it("detects private ip addresses", () => {
+    expect(isPrivateIpAddress("127.0.0.1")).toBe(true);
+    expect(isPrivateIpAddress("10.0.0.5")).toBe(true);
+    expect(isPrivateIpAddress("192.168.1.10")).toBe(true);
+    expect(isPrivateIpAddress("::1")).toBe(true);
+    expect(isPrivateIpAddress("8.8.8.8")).toBe(false);
   });
 });
